@@ -645,7 +645,7 @@ MODULES.append(dict(
                ("""\
                 print(0 or "по умолчанию")
                 print(5 and 7)
-                print("" and 7)""",
+                print(0 and 7)""",
                 "or и and вернули одно из значений, а не True или False")],
               [pitfall("`&&`, `||` и `!` — из других языков. В Python это SyntaxError.",
                        bad="ok = a && b", good="ok = a and b", syntax_error=True),
