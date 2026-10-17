@@ -123,7 +123,7 @@ void main() {
   });
 
   test('fix line starts from the broken line and forgives spacing and quotes', () {
-    expect(const InitialAnswerFactory().initialFor(fixLevel), const TextAnswer('if age > 18:'));
+    expect((const InitialAnswerFactory().initialFor(fixLevel)! as TextAnswer).text, 'if age > 18:');
     bool ok(String text) => validators.validate(fixLevel, TextAnswer(text)).isCorrect;
     expect(ok('if age >= 18:'), isTrue);
     expect(ok('   if age>=18 :'), isTrue);

@@ -384,8 +384,30 @@ def topic(topic_id, title, summary, body, examples, pitfalls=()):
             example["stdin"] = flags["stdin"]
         built.append(example)
     assert built, (topic_id, "a topic needs an example")
+    for pitfall in pitfalls:
+        assert isinstance(pitfall, (str, dict)), (topic_id, "pitfall must be text or pitfall(...)")
     return dict(id=topic_id, title=title, summary=summary, body=dedent(body),
                 examples=built, pitfalls=list(pitfalls))
+
+
+def pitfall(why, *, bad=None, good=None, syntax_error=False):
+    """A typical mistake as «так нельзя / так можно». `bad` and `good` are
+    fragments (not executed) but must be valid Python, unless the point is
+    a SyntaxError (`syntax_error=True`, then only `good` is parsed)."""
+    import ast
+    item = dict(why=why)
+    for key, code in (("bad", bad), ("good", good)):
+        if code is None:
+            continue
+        code = dedent(code)
+        if not (key == "bad" and syntax_error):
+            try:
+                ast.parse(code)
+            except SyntaxError as error:
+                raise AssertionError(("pitfall code is not valid Python", key, code, error.msg))
+        item[key] = code
+    assert ("bad" in item) == ("good" in item), ("pitfall needs both bad and good", why)
+    return item
 
 
 def task(task_id, title, prompt, *, solution, tests, starter="", hint=None, difficulty=1,
