@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/game_colors.dart';
 import '../../../shared/widgets/code_block.dart';
 import '../domain/answer.dart';

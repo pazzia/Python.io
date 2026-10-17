@@ -330,6 +330,29 @@
    }
   },
   {
+   "id": "nx_walrus_fix",
+   "type": "fix_line",
+   "role": "challenge",
+   "title": "Моржовый оператор",
+   "prompt": "Строка 2 с ошибкой. Перепишите её правильно",
+   "topic": "idiom_walrus",
+   "difficulty": 3,
+   "hint": "Присваивание внутри выражения пишут через :=, и нужны скобки, чтобы n получило длину.",
+   "explanation": "= внутри if — синтаксическая ошибка. (n := len(data)) > 3 сохраняет длину в n и сравнивает её с 3.",
+   "code": "data = [3, 8, 1, 9]\nif n = len(data) > 3:\n    print(\"длина\", n)",
+   "payload": {
+    "line": 1,
+    "accepted": [
+     "if (n := len(data)) > 3:"
+    ],
+    "expectedOutput": "длина 4\n"
+   },
+   "solution": {
+    "code": "data = [3, 8, 1, 9]\nif (n := len(data)) > 3:\n    print(\"длина\", n)",
+    "output": "длина 4\n"
+   }
+  },
+  {
    "id": "py_idiom_009",
    "type": "predict_output",
    "role": "boss",

@@ -330,6 +330,29 @@
    }
   },
   {
+   "id": "nx_main_fix",
+   "type": "fix_line",
+   "role": "practice",
+   "title": "Точка входа",
+   "prompt": "Строка 4 с ошибкой. Перепишите её правильно",
+   "topic": "proj_structure",
+   "difficulty": 1,
+   "hint": "Какое значение у __name__ у запущенного файла?",
+   "explanation": "У запущенного файла __name__ — \"__main__\" с подчёркиваниями. С \"main\" условие ложно, и программа молчит.",
+   "code": "def main():\n    print(\"программа работает\")\n\nif __name__ == \"main\":\n    main()",
+   "payload": {
+    "line": 3,
+    "accepted": [
+     "if __name__ == \"__main__\":"
+    ],
+    "expectedOutput": "программа работает\n"
+   },
+   "solution": {
+    "code": "def main():\n    print(\"программа работает\")\n\nif __name__ == \"__main__\":\n    main()",
+    "output": "программа работает\n"
+   }
+  },
+  {
    "id": "py_proj_010",
    "type": "predict_output",
    "role": "boss",

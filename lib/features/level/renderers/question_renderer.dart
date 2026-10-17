@@ -11,6 +11,7 @@ import 'fill_code_renderer.dart';
 import 'match_pairs_renderer.dart';
 import 'multi_select_renderer.dart';
 import 'multiple_choice_renderer.dart';
+import 'new_types_renderers.dart';
 import 'type_output_renderer.dart';
 import 'unsupported_renderer.dart';
 
@@ -70,6 +71,9 @@ class QuestionRendererRegistry {
     LevelType.typeOutput: TypeOutputRenderer(),
     LevelType.matchPairs: MatchPairsRenderer(),
     LevelType.multiSelect: MultiSelectRenderer(),
+    LevelType.traceTable: TraceTableRenderer(),
+    LevelType.categorize: CategorizeRenderer(),
+    LevelType.fixLine: FixLineRenderer(),
   });
 
   final Map<LevelType, QuestionRenderer> _renderers;

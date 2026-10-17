@@ -36,6 +36,7 @@ SECONDS_PER_LEVEL = 70
 def load_modules():
     folder = os.path.join(HERE, "course")
     modules = []
+    extras = []
     for name in sorted(os.listdir(folder)):
         if not (name.startswith("c") and name.endswith(".py")):
             continue
@@ -43,6 +44,15 @@ def load_modules():
         source = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(source)
         modules.extend(source.MODULES)
+        extras.append(getattr(source, "EXTRA_LEVELS", {}))
+    # Levels kept in separate files (e.g. new mechanics) join their module
+    # right before its boss.
+    by_id = {module["id"]: module for module in modules}
+    for extra in extras:
+        for module_id, levels in extra.items():
+            assert module_id in by_id, ("extra levels for unknown module", module_id)
+            target = by_id[module_id]["levels"]
+            target[-1:-1] = levels
     return modules
 
 

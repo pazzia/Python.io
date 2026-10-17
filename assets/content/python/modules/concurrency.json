@@ -256,6 +256,41 @@
    }
   },
   {
+   "id": "nx_conc_sort",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Потоки или процессы",
+   "prompt": "Что лучше подходит для задачи в обычном CPython?",
+   "topic": "conc_processes",
+   "difficulty": 2,
+   "hint": "GIL не мешает ожиданию, но мешает вычислениям на чистом Python.",
+   "explanation": "Ожидания (сеть, база) хорошо работают в потоках. Вычисления на чистом Python упираются в GIL — им нужны процессы.",
+   "payload": {
+    "categories": [
+     "Потоки (threading)",
+     "Процессы (multiprocessing)"
+    ],
+    "items": [
+     {
+      "text": "Скачать 100 страниц",
+      "category": 0
+     },
+     {
+      "text": "Посчитать хеши миллиона паролей на чистом Python",
+      "category": 1
+     },
+     {
+      "text": "Ждать ответы базы данных",
+      "category": 0
+     },
+     {
+      "text": "Обработать картинки циклами на Python на всех ядрах",
+      "category": 1
+     }
+    ]
+   }
+  },
+  {
    "id": "py_conc_010",
    "type": "predict_output",
    "role": "boss",

@@ -618,6 +618,51 @@
    }
   },
   {
+   "id": "nx_async_sort",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Блокирует или уступает",
+   "prompt": "Что делает эта строка внутри корутины?",
+   "topic": "async_basics",
+   "difficulty": 3,
+   "hint": "Управление отдаётся только в точке await.",
+   "explanation": "await с асинхронной операцией отдаёт ход циклу событий. Синхронный sleep и тяжёлые вычисления держат поток — все задачи стоят.",
+   "payload": {
+    "categories": [
+     "Уступает ход другим задачам",
+     "Блокирует весь цикл"
+    ],
+    "items": [
+     {
+      "text": "await asyncio.sleep(1)",
+      "category": 0,
+      "code": true
+     },
+     {
+      "text": "time.sleep(1)",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "await queue.get()",
+      "category": 0,
+      "code": true
+     },
+     {
+      "text": "sum(range(10**8))",
+      "category": 1,
+      "code": true,
+      "feedback": "Долгое вычисление не отдаёт управление — остальные задачи ждут."
+     },
+     {
+      "text": "await asyncio.gather(a(), b())",
+      "category": 0,
+      "code": true
+     }
+    ]
+   }
+  },
+  {
    "id": "py_async_010",
    "type": "predict_output",
    "role": "boss",
