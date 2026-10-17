@@ -304,7 +304,7 @@ term("@", "deco_basics",
      brief="Применяет декоратор: `@deco` над `def f` значит `f = deco(f)`.",
      example=('def loud(f):\n    return lambda: f().upper()\n'
               '@loud\ndef hi(): return "hi"\nprint(hi())'))
-term("...", "inh_mro",
+term("...", "inh_mro", auto=False,
      brief="«Здесь ничего нет»: заглушка тела функции или класса.",
      example='def todo():\n    ...\nprint(todo())')
 term("in", "list_basics", auto=False,
@@ -392,7 +392,7 @@ term("[x for x in xs]", "comp_list",
      example='print([x * x for x in range(4)])')
 term("[x for x in xs if c]", "comp_cond",
      brief="Включение с фильтром: берёт только подходящие элементы.",
-     example='xs = range(10)\nev = [x for x in xs if x % 3 == 0]\nprint(ev)')
+     example='xs = range(10)\nprint([x for x in xs if x > 6])')
 term("{k: v for k in xs}", "comp_dict_set",
      brief="Словарь или множество одной строкой.",
      example='ws = ["a", "bb"]\nprint({w: len(w) for w in ws})')
@@ -802,7 +802,7 @@ term("csv", "files_csv",
 term("csv.DictReader", "files_csv", match=("DictReader",),
      brief="Читает CSV в словари: ключи берутся из первой строки.",
      example=('import csv\nlines = ["a,b", "1,2"]\n'
-              'print(next(csv.DictReader(lines)))'))
+              'r = csv.DictReader(lines)\nprint(next(r))'))
 term("csv.writer", "files_csv",
      brief="Записывает строки таблицы в CSV-файл.",
      example=('import csv\nwith open("t.csv", "w") as f:\n'
@@ -922,7 +922,8 @@ term("doctest", "test_assert",
      brief="Проверяет примеры из docstring, сравнивая вывод.",
      example=('import doctest\ndef sq(x):\n    """\n    >>> sq(3)\n'
               '    9\n    """\n    return x * x\n'
-              'print(doctest.testmod())'))
+              'doctest.run_docstring_examples(\n'
+              '    sq, globals(), verbose=True)'))
 term("logging", "test_logging",
      brief="Сообщения с уровнем важности вместо `print`.",
      example='import logging as lg\nprint(lg.WARNING, lg.INFO)')
@@ -933,7 +934,8 @@ term("logging.basicConfig", "test_logging", match=("basicConfig",),
      brief="Настраивает уровень и формат сообщений всего приложения.",
      example=('import logging, sys\nlogging.basicConfig(\n'
               '    stream=sys.stdout,\n'
-              '    format="%(levelname)s:%(msg)s")\n'
+              '    format="%(levelname)s: %(message)s",\n'
+              '    force=True)\n'
               'logging.warning("осторожно")'))
 term("argparse", "proj_cli_logging",
      brief="Модуль для разбора аргументов командной строки.",
@@ -943,7 +945,7 @@ term("ArgumentParser", "proj_cli_logging", match=("argparse.ArgumentParser",),
      brief="Описывает аргументы программы и разбирает их.",
      example=('from argparse import *\np = ArgumentParser()\n'
               'p.add_argument("--n", type=int)\n'
-              'print(p.parse_args(["--n", "3"]))'))
+              'a = p.parse_args(["--n", "3"])\nprint(a)'))
 term("sys.argv", "proj_structure",
      brief="Список аргументов запуска; первый элемент это имя файла.")
 term("sys.exit", "proj_structure",
@@ -979,14 +981,15 @@ term("asyncio.wait_for", "async_tasks", match=("wait_for",),
      brief="Ждёт корутину не дольше заданного времени.",
      example=('import asyncio\nasync def main():\n    try:\n'
               '        c = asyncio.sleep(1)\n'
-              '        await asyncio.wait_for(c, 0.01)\n'
+              '        await asyncio.wait_for(\n'
+              '            c, timeout=0.01)\n'
               '    except TimeoutError:\n        print("не дождались")\n'
               'asyncio.run(main())'))
 term("asyncio.timeout", "async_tasks",
      brief="Блок `async with` с ограничением времени.",
      example=('import asyncio\nasync def main():\n    try:\n'
-              '        tm = asyncio.timeout(0.01)\n'
-              '        async with tm:\n'
+              '        t = asyncio.timeout(0.1)\n'
+              '        async with t:\n'
               '          await asyncio.sleep(1)\n'
               '    except TimeoutError:\n        print("время вышло")\n'
               'asyncio.run(main())'))
@@ -1098,7 +1101,8 @@ term("CancelledError", "async_tasks", match=("asyncio.CancelledError",),
               '    t = asyncio.create_task(\n        asyncio.sleep(1))\n'
               '    await asyncio.sleep(0)\n    t.cancel()\n'
               '    try: await t\n'
-              '    except asyncio.CancelledError:\n'
+              '    except (asyncio\n'
+              '            .CancelledError):\n'
               '        print("отменена")\nasyncio.run(main())'))
 term("TimeoutError", "async_tasks", match=("asyncio.TimeoutError",),
      brief="Результата не дождались за отведённое время.",
