@@ -38,7 +38,7 @@
    "role": "practice",
    "title": "Какая ошибка",
    "prompt": "Сопоставьте код и исключение, которое он вызовет",
-   "topic": "exc_types",
+   "topic": "exc_traceback",
    "difficulty": 2,
    "hint": "Неверное значение — ValueError, неверный тип — TypeError.",
    "explanation": "int('abc') — ValueError, индекс за пределами — IndexError, нет ключа — KeyError, деление на 0 — ZeroDivisionError, строка + число — TypeError, неизвестное имя — NameError.",

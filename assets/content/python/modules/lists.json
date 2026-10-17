@@ -225,7 +225,7 @@
    "role": "challenge",
    "title": "Пропавший список",
    "prompt": "Найдите строку с ошибкой",
-   "topic": "list_methods",
+   "topic": "none_value",
    "difficulty": 2,
    "hint": "Что возвращает метод sort?",
    "explanation": "sort() сортирует список на месте и возвращает None. После nums = nums.sort() в nums лежит None, и nums[0] вызывает TypeError.",

@@ -174,7 +174,7 @@
    "role": "practice",
    "title": "Абстрактный класс",
    "prompt": "Что произойдёт при вызове Shape()?",
-   "topic": "inh_mro",
+   "topic": "inh_abc",
    "difficulty": 2,
    "hint": "Зачем методу пометка @abstractmethod?",
    "explanation": "Класс с нереализованным абстрактным методом нельзя создать: TypeError. Его подклассы обязаны реализовать area.",

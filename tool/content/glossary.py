@@ -291,7 +291,7 @@ term("match", "idiom_match", match=("case",),
 term(":=", "idiom_walrus",
      brief="Присваивание внутри выражения.",
      example='if (n := len("hello")) > 3:\n    print(n)')
-term("first, *rest = xs", "idiom_walrus", match=("first, *rest",),
+term("first, *rest = xs", "idiom_unpack", match=("first, *rest",),
      brief="Звёздочка собирает «всё остальное» в список.",
      example='first, *rest = [1, 2, 3]\nprint(first, rest)')
 term("is", "list_mutable", match=("is not",),
@@ -977,7 +977,7 @@ term("asyncio.TaskGroup", "async_tasks", match=("TaskGroup",),
               '    tg = asyncio.TaskGroup()\n    async with tg:\n'
               '        t = tg.create_task(\n            asyncio.sleep(0, 1))\n'
               '    print(t.result())\nasyncio.run(main())'))
-term("asyncio.wait_for", "async_tasks", match=("wait_for",),
+term("asyncio.wait_for", "async_timeouts", match=("wait_for",),
      brief="Ждёт корутину не дольше заданного времени.",
      example=('import asyncio\nasync def main():\n    try:\n'
               '        c = asyncio.sleep(1)\n'
@@ -985,7 +985,7 @@ term("asyncio.wait_for", "async_tasks", match=("wait_for",),
               '            c, timeout=0.01)\n'
               '    except TimeoutError:\n        print("не дождались")\n'
               'asyncio.run(main())'))
-term("asyncio.timeout", "async_tasks",
+term("asyncio.timeout", "async_timeouts",
      brief="Блок `async with` с ограничением времени.",
      example=('import asyncio\nasync def main():\n    try:\n'
               '        t = asyncio.timeout(0.1)\n'
@@ -1001,16 +1001,16 @@ term("Thread", "conc_threads", match=("threading.Thread",),
      example=('from threading import Thread\n'
               'def work(): print("поток")\n'
               't = Thread(target=work)\nt.start(); t.join()'))
-term("Lock", "conc_threads", match=("threading.Lock",),
+term("Lock", "conc_lock", match=("threading.Lock",),
      brief="Замок: только один поток за раз выполняет защищённый блок.",
      example=('from threading import Lock\nlock = Lock()\n'
               'with lock:\n    print(lock.locked())'))
 term("GIL", "conc_threads",
      brief="Блокировка интерпретатора: байт-код выполняет один поток за раз.")
-term("queue.Queue", "conc_threads", match=("Queue",),
+term("queue.Queue", "conc_queue", match=("Queue",),
      brief="Потокобезопасная очередь для передачи данных между потоками.",
      example='import queue\nq = queue.Queue()\nq.put(1)\nprint(q.get())')
-term("ThreadPoolExecutor", "conc_threads", match=("concurrent.futures.ThreadPoolExecutor",),
+term("ThreadPoolExecutor", "conc_pool", match=("concurrent.futures.ThreadPoolExecutor",),
      brief="Пул потоков: раздаёт задачи нескольким потокам.",
      example=('from concurrent.futures import *\n'
               'with ThreadPoolExecutor() as ex:\n'
@@ -1095,7 +1095,7 @@ term("KeyboardInterrupt", "exc_try",
 term("AssertionError", "test_assert",
      brief="Не прошла проверка `assert`.",
      example='try: assert 1 > 2, "не так"\nexcept AssertionError as e:\n    print(e)')
-term("CancelledError", "async_tasks", match=("asyncio.CancelledError",),
+term("CancelledError", "async_timeouts", match=("asyncio.CancelledError",),
      brief="Задачу отменили.",
      example=('import asyncio\nasync def main():\n'
               '    t = asyncio.create_task(\n        asyncio.sleep(1))\n'
@@ -1104,7 +1104,7 @@ term("CancelledError", "async_tasks", match=("asyncio.CancelledError",),
               '    except (asyncio\n'
               '            .CancelledError):\n'
               '        print("отменена")\nasyncio.run(main())'))
-term("TimeoutError", "async_tasks", match=("asyncio.TimeoutError",),
+term("TimeoutError", "async_timeouts", match=("asyncio.TimeoutError",),
      brief="Результата не дождались за отведённое время.",
      example='try: raise TimeoutError\nexcept TimeoutError:\n    print("тайм-аут")')
 
@@ -1186,5 +1186,5 @@ term("EAFP", "idiom_eafp", auto=False,
 term("корутина", "async_basics", auto=False,
      brief="Функция, которая умеет ждать, не блокируя другие; ими управляет цикл событий.",
      example='async def f(): return 1\nc = f()\nprint(type(c).__name__)\nc.close()')
-term("PEP 8", "proj_structure", auto=False,
+term("PEP 8", "proj_style", auto=False,
      brief="Стиль кода Python: отступы, имена, длина строк.")
