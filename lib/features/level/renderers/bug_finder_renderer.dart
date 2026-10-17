@@ -13,8 +13,17 @@ class BugFinderRenderer extends QuestionRenderer {
   bool get showsLevelCode => false;
 
   @override
-  Widget build(BuildContext context, QuestionContext question) =>
+  Widget? buildStage(BuildContext context, QuestionContext question) =>
       BugFinderView(question: question);
+
+  @override
+  Widget build(BuildContext context, QuestionContext question) => Text(
+        'Нажмите на строку с ошибкой',
+        style: Theme.of(context)
+            .textTheme
+            .bodySmall
+            ?.copyWith(color: context.gameColors.textMuted),
+      );
 }
 
 /// Tap the line(s) containing a bug.
@@ -30,10 +39,7 @@ class BugFinderView extends StatelessWidget {
       _ => LineSelectionAnswer(const <int>{}),
     };
     final outcome = question.outcome;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        CodeBlock(
+    return CodeBlock(
           code: question.level.code ?? '',
           selectedLines: answer.lines,
           errorLines: outcome != null && !outcome.isCorrect
@@ -45,16 +51,7 @@ class BugFinderView extends StatelessWidget {
           onLineTap: question.isLocked
               ? null
               : (line) => question.onChanged(answer.toggle(line)),
-        ),
-        const SizedBox(height: Spacing.md),
-        Text(
-          'Нажмите на строку с ошибкой',
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall
-              ?.copyWith(color: context.gameColors.textMuted),
-        ),
-      ],
+        expandable: true,
     );
   }
 }

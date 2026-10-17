@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../shared/widgets/code_block.dart';
 import '../../courses/domain/level_definition.dart';
 import '../../courses/domain/level_type.dart';
 import '../domain/answer.dart';
@@ -44,6 +45,15 @@ abstract class QuestionRenderer {
   /// Renderers that draw the code themselves return false.
   bool get showsLevelCode => true;
 
+  /// What stays pinned under the prompt while the answers scroll: the code
+  /// the question is about. By default `level.code` (when [showsLevelCode]).
+  Widget? buildStage(BuildContext context, QuestionContext question) {
+    final code = question.level.code;
+    if (!showsLevelCode || code == null) return null;
+    return CodeBlock(code: code, expandable: true);
+  }
+
+  /// The answer area (scrolls under the stage).
   Widget build(BuildContext context, QuestionContext question);
 }
 
