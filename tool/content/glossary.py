@@ -1121,7 +1121,7 @@ term("изменяемый", "list_mutable", auto=False,
 term("hashable", None, auto=False,
      brief="Хешируемое значение не меняется: число, строка, кортеж; только такие бывают ключами dict.",
      example='print(hash("a") == hash("a"))\nprint({(1, 2): "ok"})')
-term("none", None, match=("None",),
+term("none", "none_value", match=("None",),
      brief="«Значения нет». Его возвращает функция без `return`.",
      example='def f(): pass\nprint(f(), f() is None)')
 term("pass", None,

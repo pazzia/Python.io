@@ -191,6 +191,10 @@ def autolink(topic, glossary, module_rank, topic_module, basic_after_rank):
 
         def replace(match):
             code = match.group(1)
+            # `]`/`|` would break the link markup; long fragments (messages,
+            # whole statements) are not names of anything.
+            if "]" in code or "|" in code or len(code) > 28:
+                return match.group(0)
             key = term_for(code, glossary)
             if key is None or per_line[0] <= 0 or budget[0] <= 0:
                 return match.group(0)
