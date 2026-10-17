@@ -315,6 +315,38 @@
    }
   },
   {
+   "id": "nx_test_tf",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Про тесты",
+   "prompt": "Верно ли утверждение?",
+   "topic": "test_assert",
+   "difficulty": 2,
+   "hint": "Что именно проверяет assert, если после него стоят скобки с запятой?",
+   "explanation": "assert падает, если условие ложно. Скобки с запятой создают кортеж — непустой кортеж всегда истинен. Mock записывает каждый вызов.",
+   "payload": {
+    "categories": [
+     "Верно",
+     "Неверно"
+    ],
+    "items": [
+     {
+      "text": "assert с ложным условием бросает AssertionError",
+      "category": 0
+     },
+     {
+      "text": "assert (x > 0, 'сообщение') проверяет x > 0",
+      "category": 1,
+      "feedback": "Это кортеж — он всегда истинен."
+     },
+     {
+      "text": "Mock запоминает, с какими аргументами его вызывали",
+      "category": 0
+     }
+    ]
+   }
+  },
+  {
    "id": "py_test_009",
    "type": "predict_output",
    "role": "boss",

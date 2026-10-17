@@ -135,7 +135,7 @@
    "role": "practice",
    "title": "Логгеры модулей",
    "prompt": "Что выведет код?",
-   "topic": "proj_cli_logging",
+   "topic": "proj_logging",
    "difficulty": 3,
    "hint": "У логгера app.db свой порог. А что возвращает getLogger при повторном вызове с тем же именем?",
    "explanation": "Для app.db порог поднят до WARNING — его info отсекается. app.api наследует порог INFO от корня. getLogger с тем же именем возвращает тот же объект — поэтому в каждом модуле пишут getLogger(__name__) и настраивают уровни по именам.",
@@ -166,7 +166,7 @@
    "role": "practice",
    "title": "Имена по PEP 8",
    "prompt": "Какие имена записаны по PEP 8?",
-   "topic": "proj_structure",
+   "topic": "proj_style",
    "difficulty": 2,
    "hint": "Функции и переменные — snake_case, классы — CamelCase, константы — ВЕРХНИЙ_РЕГИСТР.",
    "explanation": "snake_case для переменных и функций, CapWords для классов, UPPER_CASE для констант, ведущее подчёркивание — для внутренних имён. getUserName и Calculate_Total нарушают стиль функций.",
@@ -201,7 +201,7 @@
    "role": "practice",
    "title": "Docstring",
    "prompt": "Что выведет код?",
-   "topic": "proj_structure",
+   "topic": "proj_style",
    "difficulty": 1,
    "hint": "Строка сразу после def попадает в __doc__.",
    "explanation": "Первая строка в теле функции — docstring: она хранится в __doc__ (без кавычек). Её первая строка — краткое описание.",
@@ -327,6 +327,29 @@
    "solution": {
     "code": "import argparse\n\nparser = argparse.ArgumentParser(prog=\"tool\")\nparser.add_argument(\"--limit\", type=int)\ntry:\n    parser.parse_args([\"--limit\", \"много\"])\nexcept SystemExit as error:\n    print(\"код выхода:\", error.code)",
     "output": "код выхода: 2\n"
+   }
+  },
+  {
+   "id": "nx_main_fix",
+   "type": "fix_line",
+   "role": "practice",
+   "title": "Точка входа",
+   "prompt": "Строка 4 с ошибкой. Перепишите её правильно",
+   "topic": "proj_structure",
+   "difficulty": 1,
+   "hint": "Какое значение у __name__ у запущенного файла?",
+   "explanation": "У запущенного файла __name__ — \"__main__\" с подчёркиваниями. С \"main\" условие ложно, и программа молчит.",
+   "code": "def main():\n    print(\"программа работает\")\n\nif __name__ == \"main\":\n    main()",
+   "payload": {
+    "line": 3,
+    "accepted": [
+     "if __name__ == \"__main__\":"
+    ],
+    "expectedOutput": "программа работает\n"
+   },
+   "solution": {
+    "code": "def main():\n    print(\"программа работает\")\n\nif __name__ == \"__main__\":\n    main()",
+    "output": "программа работает\n"
    }
   },
   {
