@@ -304,7 +304,7 @@ term("@", "deco_basics",
      brief="Применяет декоратор: `@deco` над `def f` значит `f = deco(f)`.",
      example=('def loud(f):\n    return lambda: f().upper()\n'
               '@loud\ndef hi(): return "hi"\nprint(hi())'))
-term("...", "inh_mro", auto=False,
+term("...", "inh_abc", auto=False,
      brief="«Здесь ничего нет»: заглушка тела функции или класса.",
      example='def todo():\n    ...\nprint(todo())')
 term("in", "list_basics", auto=False,
@@ -834,12 +834,12 @@ term("enum.auto", "dc_enum", match=("auto()",),
      brief="Номер для константы Enum выбирается автоматически.",
      example=('from enum import Enum, auto\nclass C(Enum):\n'
               '    A = auto()\n    B = auto()\nprint(C.B.value)'))
-term("ABC", "inh_mro", match=("abc.ABC",),
+term("ABC", "inh_abc", match=("abc.ABC",),
      brief="Класс-интерфейс, который нельзя создать напрямую.",
      example=('from abc import *\nclass Shape(ABC):\n'
               '    @abstractmethod\n    def area(self): ...\n'
               'try: Shape()\nexcept TypeError:\n    print("нельзя")'))
-term("@abstractmethod", "inh_mro", match=("abstractmethod",),
+term("@abstractmethod", "inh_abc", match=("abstractmethod",),
      brief="Метод, который обязан написать каждый потомок.",
      example=('from abc import *\nclass S(ABC):\n'
               '    @abstractmethod\n    def f(self): ...\n'
@@ -849,12 +849,12 @@ term("Protocol", "typing_advanced", match=("typing.Protocol",),
      example=('from typing import Protocol\n'
               'class Named(Protocol):\n    name: str\n'
               'print(Named.__name__)'))
-term("TypedDict", "typing_advanced", match=("typing.TypedDict",),
+term("TypedDict", "typing_typeddict", match=("typing.TypedDict",),
      brief="Словарь с известными ключами и типами значений.",
      example=('from typing import TypedDict\n'
               'class U(TypedDict):\n    name: str\n'
               'print(U(name="Аня"))'))
-term("Literal", "typing_advanced", match=("typing.Literal",),
+term("Literal", "typing_typeddict", match=("typing.Literal",),
      brief="Тип, допускающий только перечисленные значения.",
      example=('from typing import Literal\n'
               'Mode = Literal["r", "w"]\nprint(Mode)'))
