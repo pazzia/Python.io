@@ -312,7 +312,7 @@ term("in", "list_basics", auto=False,
      example='print("от" in "кот")\nprint(3 in [1, 2])\nprint("a" in {"a": 1})')
 
 # ---------------------------------------------- operators and literals
-term("+", "ops_arith",
+term("+", "ops_arith", auto=False,
      brief="Сложение чисел; строки и списки склеивает.",
      example='print(2 + 3, "ab" + "c")')
 term("-", "ops_arith", auto=False,
@@ -685,11 +685,11 @@ term("defaultdict", "std_collections", match=("collections.defaultdict",),
      brief="Словарь, который сам создаёт значение для нового ключа.",
      example=('from collections import *\nd = defaultdict(list)\n'
               'd["a"].append(1)\nprint(dict(d))'))
-term("deque", "std_collections", match=("collections.deque",),
+term("deque", "std_deque", match=("collections.deque",),
      brief="Очередь с быстрым добавлением и удалением с обоих концов.",
      example=('from collections import deque\nq = deque([1, 2])\n'
               'q.appendleft(0)\nprint(list(q))'))
-term("namedtuple", "std_collections", match=("collections.namedtuple",),
+term("namedtuple", "std_deque", match=("collections.namedtuple",),
      brief="Кортеж с именованными полями.",
      example=('from collections import *\nP = namedtuple("P", "x y")\n'
               'print(P(1, 2).y)'))

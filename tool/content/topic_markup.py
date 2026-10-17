@@ -96,7 +96,7 @@ def check_inline(text, where):
     outside = CODE.sub("", LINK.sub(lambda m: CODE.sub("", m.group(2)), text))
     assert "`" not in outside, (where, "unbalanced backtick", text)
     assert outside.count("**") % 2 == 0, (where, "unbalanced **", text)
-    assert "[[" not in outside and "]]" not in outside, (where, "broken link", text)
+    assert not re.search(r"\[\[[A-Za-z_][\w:.]*\|", outside), (where, "broken link", text)
     prose = CODE.sub("", plain_text(text))
     for char, instead in FORBIDDEN.items():
         assert char not in prose and char not in text, (where, f"symbol {char!r} renders as an emoji square; use {instead}")
@@ -121,6 +121,8 @@ def lint(topic):
             if kind == "table" and TABLE_RULE.match(line.replace(" ", "")):
                 continue
             check_inline(line, (tid, kind))
+            if kind == "table":
+                assert not links_in(line), (tid, "no links inside table cells", line)
         if kind == "table":
             assert len(lines) >= 3 and TABLE_RULE.match(lines[1].replace(" ", "")), (tid, "table needs a header and |---|")
             columns = lines[0].count("|") - 1
@@ -220,8 +222,12 @@ def autolink(topic, glossary, module_rank, topic_module, basic_after_rank):
             in_syntax = not in_syntax
             new_lines.append(line)
             continue
-        if in_syntax or line.startswith("## "):
+        # Table rows: a link's `|` would split the cell.
+        if in_syntax:
             new_lines.append(line)
+            continue
+        if line.startswith("## ") or line.lstrip().startswith("|"):
+            new_lines.append(re.sub(r"\{(`[^`]+`)\}", r"\1", line))
             continue
         new_lines.append(link_line(line))
     topic["body"] = "\n".join(new_lines)
