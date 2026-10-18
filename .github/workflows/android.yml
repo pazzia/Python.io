@@ -530,6 +530,15 @@ jobs:
             section "simulator log" sim-log.txt 40
             section "simulator build" simbuild.txt 20
             section "ipa build" ipa.txt 25
+            # Small JPEG copies of the screenshots, base64 (artifacts are not
+            # reachable from every reviewer's environment).
+            for f in shots/*.png; do
+              [ -f "$f" ] || continue
+              sips -s format jpeg -s formatOptions 55 --resampleWidth 300 "$f" --out "${f%.png}.jpg" > /dev/null
+              echo "<details><summary>shot $(basename "${f%.png}")</summary>"; echo; echo '```'
+              base64 -i "${f%.png}.jpg" | tr -d '\n'; echo
+              echo '```'; echo "</details>"
+            done
           } > ios-report.md
           gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file ios-report.md
 
