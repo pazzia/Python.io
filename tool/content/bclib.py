@@ -14,6 +14,7 @@ import builtins
 import contextlib
 import io
 import itertools
+import linecache
 import os
 import signal
 import sys
@@ -73,6 +74,10 @@ def run(code, stdin="", time_limit=TIME_LIMIT_SECONDS):
     tmp = tempfile.mkdtemp(prefix="bytecraft_")
     old_handler = signal.signal(signal.SIGALRM, _on_alarm)
     signal.setitimer(signal.ITIMER_REAL, time_limit)
+    # A program is compiled from memory as "main.py": tracebacks must not
+    # show lines that another tool put into linecache under that name
+    # (doctest caches the generator's own source there).
+    linecache.cache.pop("main.py", None)
     try:
         sys.stdin = io.StringIO(stdin)
         os.chdir(tmp)

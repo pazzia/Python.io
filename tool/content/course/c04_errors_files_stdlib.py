@@ -1,6 +1,7 @@
 """Модули 18–21: исключения, файлы, стандартная библиотека, текст и данные."""
 import re as _re
-from bclib import choice, fill, match, multi, order, predict, bug, typed, topic, task, run, pitfall
+from bclib import (choice, fill, match, multi, order, predict, bug, typed, topic, task, run, pitfall,
+                   categorize, fix_line)
 
 
 def runs(code):
@@ -9,6 +10,10 @@ def runs(code):
 
 def error_of(code):
     return run(code).error
+
+
+def output_of(code):
+    return run(code).out
 
 
 MODULES = []
@@ -544,7 +549,7 @@ MODULES.append(dict(
 
 # ------------------------------------------------------------------- files
 MODULES.append(dict(
-    id="files", title="Файлы", description="open, with, pathlib", icon="📄",
+    id="files", title="Файлы", description="open, with, pathlib, bytes", icon="📄",
     topics=[
         topic("files_open", "open и with",
               "`open` открывает файл для чтения или записи, а `with` гарантированно закрывает его после работы.",
@@ -834,6 +839,94 @@ MODULES.append(dict(
                        good='open(path, "w", newline="", encoding="utf-8")'),
                pitfall("Значения из CSV — строки: TypeError: unsupported operand type(s) for +=: 'int' and 'str'.",
                        bad='total += row["score"]', good='total += int(row["score"])')]),
+        topic("files_bytes", "Байты и кодировки",
+              "`bytes` — последовательность чисел от 0 до 255; кодировка задаёт, как текст `str` превращается в байты и обратно.",
+              """
+              Диск и сеть хранят не буквы, а байты. Текст перед записью кодируют в байты, а при чтении декодируют обратно. Картинки, архивы и звук — только байты, текста в них нет.
+
+              ## Как записать
+
+              ```syntax
+              данные = строка.encode("utf-8")
+              строка = данные.decode("utf-8")
+
+              with open(путь, "rb") as f:
+                  данные = f.read()
+              ```
+
+              Литерал байтов пишут с буквой `b`: `b"PNG"`. Внутри — только латиница и коды вида `\\xd0`. Элемент `bytes` по индексу — число: `b"A"[0]` даёт `65`.
+
+              ## UTF-8: разная длина
+
+              UTF-8 — самая распространённая кодировка. Символ занимает в ней от 1 до 4 байт:
+
+              | Символ | Байт в UTF-8 |
+              |---|---|
+              | {`a`}, {`7`}, пробел | 1 |
+              | {`я`}, {`ё`} | 2 |
+              | {`€`} | 3 |
+
+              Поэтому `len(строки)` считает символы, а длину в байтах даёт `len(строка.encode())`. Лимиты сообщений и полей в базе часто заданы в байтах.
+
+              ## Не та кодировка
+
+              Байты, записанные в одной кодировке, нельзя читать в другой. Текст в `cp1251` (старая кодировка Windows) при `decode("utf-8")` даёт `UnicodeDecodeError`. Параметр `errors="replace"` заменяет испорченные байты значком вместо ошибки.
+
+              ## Двоичный режим файла
+
+              Буква `b` в режиме [[files_open|open]] — `"rb"`, `"wb"` — включает двоичный режим. `read` возвращает `bytes`, а `write` принимает только `bytes`. Параметр `encoding` в этом режиме запрещён: перевода в текст нет.
+              """,
+              [("""\
+                word = "кот"
+                data = word.encode("utf-8")
+                print(data)
+                print(len(word), len(data))
+                print(data.decode("utf-8"))""",
+                "3 символа стали 6 байтами; decode вернул строку"),
+               ("""\
+                path = "note.txt"
+                with open(path, "w", encoding="utf-8") as f:
+                    f.write("да\\n")
+
+                with open(path, "rb") as f:
+                    raw = f.read()
+                print(raw)
+                print(len(raw))""",
+                "Режим rb показал файл как есть: 4 байта букв и \\n"),
+               ("""\
+                data = "привет".encode("cp1251")
+                try:
+                    data.decode("utf-8")
+                except UnicodeDecodeError as e:
+                    print("ошибка:", e.reason)
+                print(data.decode("cp1251"))""",
+                "Чужая кодировка — UnicodeDecodeError, своя — исходный текст"),
+               ("""\
+                head = bytes([137, 80, 78, 71])
+                with open("pic.png", "wb") as f:
+                    f.write(head)
+
+                with open("pic.png", "rb") as f:
+                    sign = f.read(4)
+                print(sign)
+                print(sign[0], sign[1:] == b"PNG")""",
+                "Байт 137 не символ ASCII, поэтому он показан кодом \\x89")],
+              [pitfall("Строку и байты не сложить: TypeError: can only concatenate str (not \"bytes\") to str.",
+                       bad='text = "ID: " + data',
+                       good='text = "ID: " + data.decode("utf-8")'),
+               pitfall("В режиме `\"wb\"` `write` ждёт байты: TypeError: a bytes-like object is required, not 'str'.",
+                       bad='f.write("готово")',
+                       good='f.write("готово".encode("utf-8"))'),
+               pitfall("Двоичный режим не принимает `encoding`: ValueError: binary mode doesn't take an encoding argument.",
+                       bad='open(path, "rb", encoding="utf-8")',
+                       good='open(path, "rb")'),
+               pitfall("Лимит в байтах по `len(строки)` не проверить: кириллица занимает по 2 байта.",
+                       bad='''
+                           if len(text) <= 70:
+                               send(text)''',
+                       good='''
+                           if len(text.encode("utf-8")) <= 70:
+                               send(text)''')]),
     ],
     tasks=[
         task("t_files_reverse", "Обратный порядок",
@@ -958,6 +1051,39 @@ MODULES.append(dict(
                 feedback={"3\n3": "split ничего не знает о кавычках и режет по каждой запятой.",
                           "4\n4": "csv.reader учитывает кавычки: значений три.",
                           "3\n4": "Наоборот: split даёт 4 части, csv.reader — 3 значения."}),
+        predict("py_files_011", "Длина в байтах", """\
+                msg = "Привет!"
+                data = msg.encode("utf-8")
+                print(len(msg), len(data))""",
+                ["7 7", "7 14", "13 7"], position=2, topic="files_bytes",
+                hint="Сколько байт в UTF-8 занимает русская буква, а сколько — восклицательный знак?",
+                explanation="В строке 7 символов. В UTF-8 шесть русских букв занимают по 2 байта, «!» — 1 байт: 6 · 2 + 1 = 13.",
+                feedback={"7 7": "В UTF-8 кириллица занимает 2 байта на букву.",
+                          "7 14": "«!» — символ ASCII, он занимает 1 байт.",
+                          "13 7": "len строки считает символы, а длину в байтах даёт len байтов."}),
+        categorize("py_files_012", "str, bytes или int", "Разложите выражения по типу результата",
+                   ["str", "bytes", "int"],
+                   [('"кот".encode("utf-8")', 1), ('b"abc"', 1), ('b"abc".decode("ascii")', 0),
+                    ('bytes([72, 105])', 1), ('b"abc"[0]', 2, "Элемент bytes по индексу — число, код байта: 97."),
+                    ('b"abc"[:1]', 1, "Срез bytes — снова bytes: b'a'."),
+                    ('str(b"hi")', 0, "str от байтов не декодирует, а даёт строку \"b'hi'\" — тип всё равно str."),
+                    ('len("€".encode())', 2)],
+                   check=lambda expr: ["str", "bytes", "int"].index(
+                       output_of(f"print(type({expr}).__name__)").strip()),
+                   code_items=True, topic="files_bytes", difficulty=2,
+                   hint="encode даёт bytes, decode — str. Индекс у bytes возвращает число, срез — bytes.",
+                   explanation="encode, литерал b\"…\", bytes([...]) и срез дают bytes. decode и str() дают строку. Индекс у bytes — число от 0 до 255, len — тоже число."),
+        fix_line("py_files_013", "Запись в двоичный файл", """\
+                 with open("status.bin", "wb") as f:
+                     f.write("OK")
+
+                 with open("status.bin", "rb") as f:
+                     print(f.read())""", 1,
+                 ['f.write(b"OK")', 'f.write("OK".encode())', 'f.write("OK".encode("utf-8"))',
+                  'f.write("OK".encode("ascii"))'],
+                 expect_error="TypeError", topic="files_bytes", role="practice", difficulty=2,
+                 hint="Что принимает write в режиме \"wb\" — строку или байты?",
+                 explanation="Файл открыт в двоичном режиме, write ждёт bytes: TypeError: a bytes-like object is required, not 'str'. Подойдёт литерал b\"OK\" или \"OK\".encode()."),
         predict("py_files_009", "Босс: после with", """\
                 with open("t.txt", "w", encoding="utf-8") as f:
                     f.write("hi")

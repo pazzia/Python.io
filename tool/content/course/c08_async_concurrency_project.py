@@ -1,6 +1,7 @@
 """Модули 34–37: asyncio, потоки и процессы, производительность, программа
 как проект (argparse, logging, структура, PEP 8)."""
-from bclib import choice, fill, match, multi, order, predict, bug, typed, topic, pitfall, task, run
+from bclib import (choice, fill, match, multi, order, predict, bug, typed, topic, pitfall, task, run,
+                   categorize, fix_line)
 
 
 def compiles(code):
@@ -1841,9 +1842,110 @@ PEP8_NAMES = {
 }
 
 MODULES.append(dict(
-    id="project", title="Программа как проект", description="__main__, argparse, logging, PEP 8, docstring",
+    id="project", title="Программа как проект", description="Модули и пакеты, __main__, argparse, logging, PEP 8",
     icon="🏗️",
     topics=[
+        topic("proj_modules", "Свои модули и пакеты",
+              "Свой файл `.py` подключают через `import` как модуль, а папка с модулями и `__init__.py` становится пакетом.",
+              """
+              Когда программа растёт, код раскладывают по файлам: расчёты отдельно, ввод и вывод отдельно. Свой файл подключают тем же `import`, что и [[std_import|модули стандартной библиотеки]].
+
+              ## Как записать
+
+              ```syntax
+              # файл prices.py
+              def tax(цена):
+                  return цена * 1.2
+
+              # файл main.py в той же папке
+              import prices
+              from prices import tax
+              ```
+
+              Имя модуля — имя файла без `.py`. Поэтому файл называют как переменную: `my_tools.py`, а не `my-tools.py`.
+
+              ## Где Python ищет модули
+
+              Папки поиска перечислены в списке `sys.path`. Первой идёт папка запущенного файла, затем стандартная библиотека и установленные пакеты. В примерах файлы создаются кодом, и папку добавляют в `sys.path` вручную.
+
+              ## Импорт выполняет модуль
+
+              При первом импорте код модуля выполняется сверху вниз, а сам модуль запоминается в `sys.modules`. Повторный `import` берёт готовый объект.
+
+              У импортированного модуля `__name__` — его имя, у запущенного файла — `"__main__"`. Код под `if __name__ == "__main__":` при импорте не выполняется. Как на этом строят файл программы — в теме [[proj_structure|Структура программы]].
+
+              ## Пакет и относительный импорт
+
+              Пакет — папка с модулями и файлом `__init__.py`. Этот файл выполняется при импорте пакета. Внутри пакета соседей импортируют с точкой:
+
+              - `from . import prices` — модуль этого же пакета
+              - `from .prices import tax` — имя из соседнего модуля
+              - `from ..utils import log` — из пакета уровнем выше
+
+              Точка работает только в модуле пакета. Поэтому файл пакета запускают из папки проекта как модуль: `python -m shop.cart`.
+              """,
+              [("""\
+                import sys
+                from pathlib import Path
+
+                Path("greet.py").write_text(
+                    "def hello(name):\\n"
+                    "    return 'Привет, ' + name\\n",
+                    encoding="utf-8")
+                sys.path.insert(0, str(Path.cwd()))
+
+                import greet
+                print(greet.hello("Ада"))""",
+                "Файл greet.py стал модулем: import нашёл его через sys.path"),
+               ("""\
+                import sys
+                from pathlib import Path
+
+                Path("units.py").write_text(
+                    'print("units:", __name__)\\n'
+                    'if __name__ == "__main__":\\n'
+                    '    print("демо units")\\n',
+                    encoding="utf-8")
+                sys.path.insert(0, str(Path.cwd()))
+
+                import units
+                print("main:", __name__)""",
+                "При импорте __name__ — имя модуля, блок __main__ пропущен"),
+               ("""\
+                import sys
+                from pathlib import Path
+
+                pkg = Path("shop")
+                pkg.mkdir()
+                (pkg / "prices.py").write_text(
+                    "def tax(p):\\n    return p * 1.2\\n")
+                (pkg / "__init__.py").write_text(
+                    "from .prices import tax\\n")
+                sys.path.insert(0, str(Path.cwd()))
+
+                from shop import tax
+                print(tax(50))""",
+                "__init__.py поднял tax из shop.prices на уровень пакета"),
+               ("""\
+                print(__name__)
+                try:
+                    from .prices import tax
+                except ImportError as e:
+                    print(e)""",
+                "У запущенного файла нет пакета: импорт с точкой не работает")],
+              [pitfall("Свой файл `random.py` рядом с программой заслоняет модуль стандартной библиотеки, и `random.randint` пропадает.",
+                       bad='''
+                           # файл random.py
+                           import random
+                           print(random.randint(1, 6))''',
+                       good='''
+                           # файл dice.py
+                           import random
+                           print(random.randint(1, 6))'''),
+               pitfall("Дефис в имени файла не даёт его импортировать: `import my-tools` — SyntaxError.",
+                       bad="import my-tools", good="import my_tools", syntax_error=True),
+               pitfall("Запускать файл пакета как `python shop/cart.py`: импорт с точкой даст `ImportError`. Запускайте `python -m shop.cart` из папки проекта."),
+               pitfall("Повторный `import` не перечитывает изменённый файл: модуль уже лежит в `sys.modules`. Перезапустите программу.")]),
         topic("proj_structure", "Структура программы",
               "Программа — набор функций с одной точкой входа `main()`, которая срабатывает только при запуске файла.",
               """
@@ -1882,7 +1984,7 @@ MODULES.append(dict(
 
               ## Пакеты и окружение
 
-              - Папка с модулями и файлом `__init__.py` — пакет: `from shop.cart import Cart`.
+              - Папка с модулями и файлом `__init__.py` — [[proj_modules|пакет]]: `from shop.cart import Cart`.
               - Зависимости проекта перечисляют в `pyproject.toml`.
               - Ставят их в виртуальное окружение: `python -m venv .venv`, у каждого проекта своё.
 
@@ -2319,6 +2421,60 @@ MODULES.append(dict(
                 feedback={"ValueError": "argparse перехватывает ошибку преобразования и завершает программу через SystemExit.",
                           "код выхода: 1": "Для неверных аргументов argparse использует код 2.",
                           "код выхода: 0": "Код 0 означает успех — здесь ошибка."}),
+        predict("py_proj_012", "Модуль загружается один раз", """\
+                import sys
+                from pathlib import Path
+
+                Path("helper.py").write_text(
+                    'print("helper загружен")\\n'
+                    'def run():\\n'
+                    '    print("helper.run")\\n'
+                    'if __name__ == "__main__":\\n'
+                    '    run()\\n',
+                    encoding="utf-8")
+                sys.path.insert(0, str(Path.cwd()))
+
+                print("старт")
+                import helper
+                import helper
+                helper.run()""",
+                ["старт\nhelper загружен\nhelper загружен\nhelper.run",
+                 "старт\nhelper загружен\nhelper.run\nhelper.run",
+                 "helper загружен\nстарт\nhelper.run"],
+                position=3, topic="proj_modules", difficulty=2,
+                hint="Сколько раз выполняется код модуля при двух import? Чему равен __name__ у импортированного модуля?",
+                explanation="Код модуля выполняется при первом import — после «старт». Второй import берёт модуль из sys.modules и ничего не печатает. Внутри helper __name__ равно \"helper\", поэтому run() под проверкой не вызывается — его вызывает только main.",
+                feedback={"старт\nhelper загружен\nhelper загружен\nhelper.run": "Повторный import не выполняет модуль заново: он уже в sys.modules.",
+                          "старт\nhelper загружен\nhelper.run\nhelper.run": "При импорте __name__ — \"helper\", блок под __main__ не выполняется.",
+                          "helper загружен\nстарт\nhelper.run": "import выполняется там, где стоит, — после print(\"старт\")."}),
+        fix_line("py_proj_013", "Импорт с точкой", """\
+                 import sys
+                 from pathlib import Path
+
+                 pkg = Path("store")
+                 pkg.mkdir()
+                 (pkg / "__init__.py").write_text("")
+                 (pkg / "prices.py").write_text(
+                     "def tax(p):\\n    return p * 1.2\\n")
+                 sys.path.insert(0, str(Path.cwd()))
+
+                 from .prices import tax
+                 print(tax(100))""", 10,
+                 ["from store.prices import tax"],
+                 expect_error="ImportError", topic="proj_modules", role="practice", difficulty=2,
+                 hint="Запущенный файл — модуль __main__, он не лежит ни в каком пакете. Куда тогда указывает точка?",
+                 explanation="Импорт с точкой ищет соседа в пакете текущего модуля, а у запущенного файла пакета нет: ImportError: attempted relative import with no known parent package. Из главного файла пишут полный путь: from store.prices import tax."),
+        categorize("py_proj_014", "Что выполнится при импорте", "Файл tools.py импортируют командой import tools. Что из него выполнится?",
+                   ["Выполнится при импорте", "Не выполнится"],
+                   [('print("загрузка") на верхнем уровне', 0),
+                    ("RATE = 0.2 на верхнем уровне", 0),
+                    ("import json в начале файла", 0),
+                    ("тело функции def report()", 1, "def только создаёт функцию, тело выполнится при вызове."),
+                    ('код под if __name__ == "__main__":', 1, "При импорте __name__ равно \"tools\", условие ложно."),
+                    ("тело класса class Cart:", 0, "Тело класса выполняется сразу, когда Python доходит до class: так создаются его атрибуты и методы.")],
+                   topic="proj_modules", difficulty=3,
+                   hint="Импорт выполняет модуль сверху вниз, как при запуске. Что из этого откладывает выполнение?",
+                   explanation="При импорте выполняется весь верхний уровень модуля: присваивания, import, print, создание функций и классов вместе с телом класса. Тело функции ждёт вызова, а блок под проверкой __name__ ждёт запуска файла напрямую."),
         predict("py_proj_010", "Босс: мини-CLI", """\
                 import argparse
                 import logging

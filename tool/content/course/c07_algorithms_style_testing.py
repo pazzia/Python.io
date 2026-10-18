@@ -2,7 +2,8 @@
 отладка."""
 import math
 
-from bclib import choice, fill, match, multi, order, predict, bug, typed, topic, pitfall, task, run
+from bclib import (choice, fill, match, multi, order, predict, bug, typed, topic, pitfall, task, run,
+                   categorize, true_false)
 
 
 def runs(code):
@@ -1198,7 +1199,7 @@ LOGGING_FACTS = {
 }
 
 MODULES.append(dict(
-    id="testing", title="Тестирование и отладка", description="assert, unittest, mock, logging", icon="🧪",
+    id="testing", title="Тестирование и отладка", description="assert, unittest, mock, logging, pdb", icon="🧪",
     topics=[
         topic("test_assert", "assert и тесты-функции",
               "`assert` проверяет условие и падает с AssertionError, если оно ложно; на этом строят простые тесты.",
@@ -1507,6 +1508,120 @@ MODULES.append(dict(
                        good='''
                            logging.basicConfig(level=logging.INFO)
                            logging.info("старт")''')]),
+        topic("test_debug", "Отладка: breakpoint() и pdb",
+              "Отладка — поиск места, где значения расходятся с ожиданием: программу останавливают или печатают данные по пути.",
+              """
+              Программа не падает, но результат не тот. Тест показывает, что ошибка есть, а отладка — где именно. Для этого смотрят значения переменных в нужный момент.
+
+              ## Как записать
+
+              ```syntax
+              def функция():
+                  действия
+                  breakpoint()
+                  другие_действия
+              ```
+
+              `breakpoint()` останавливает программу на этой строке и открывает отладчик `pdb`. Дальше команды вводят с клавиатуры. В приложении ввода во время работы нет, поэтому отладчик здесь не запустится: пользуйтесь им на компьютере.
+
+              ## Команды pdb
+
+              | Команда | Что делает |
+              |---|---|
+              | {`n`} | следующая строка |
+              | {`s`} | войти в вызов функции |
+              | {`c`} | продолжить до остановки |
+              | {`p выражение`} | показать значение |
+              | {`l`} | код вокруг строки |
+              | {`w`} | цепочка вызовов |
+              | {`q`} | выйти |
+
+              Всю программу под отладчиком запускают так: `python -m pdb файл.py`. Переменная окружения `PYTHONBREAKPOINT=0` отключает все `breakpoint()` разом.
+
+              ## Без отладчика
+
+              - `print(f"{x=}")` — имя и точное значение одной строкой
+              - `assert условие` — падает там, где предположение нарушено
+              - `traceback.print_exc()` в `except` — [[exc_traceback|трассировка]] без остановки
+              - [[test_logging|`logging.debug`]] — сообщения, которые выключаются уровнем
+
+              ## __debug__ и флаг -O
+
+              При обычном запуске `__debug__` равно `True`. С флагом `python -O` оно становится `False`, а все `assert` и блоки `if __debug__:` пропускаются. Поэтому внутри `assert` не пишут действия, которые должны выполниться.
+              """,
+              [("""\
+                def average(marks):
+                    total = sum(marks)
+                    print(f"{total=} {len(marks)=}")
+                    return total // len(marks)
+
+                print(average([4, 5, 5]))""",
+                "Отладочный print показал данные: виновато // вместо /"),
+               ("""\
+                def discount(price, pct):
+                    assert 0 <= pct <= 100, f"{pct=}"
+                    return price * (100 - pct) / 100
+
+                print(__debug__)
+                print(discount(200, 15))
+                try:
+                    discount(200, 150)
+                except AssertionError as e:
+                    print("неверно:", e)""",
+                "assert поймал неверный процент там, где он появился"),
+               ("""\
+                import sys
+                import traceback
+
+                def parse(line):
+                    return int(line.split(";")[1])
+
+                for line in ["чай;2", "сыр;x", "хлеб;1"]:
+                    try:
+                        print(parse(line))
+                    except ValueError:
+                        traceback.print_exc(file=sys.stdout)""",
+                "Трассировка напечатана, а цикл дошёл до третьей строки"),
+               ("""\
+                import sys
+
+                def show(*args, **kwargs):
+                    caller = sys._getframe(1)
+                    print("стоп, строка", caller.f_lineno)
+                    print(caller.f_locals)
+
+                sys.breakpointhook = show
+
+                def total(prices):
+                    s = sum(prices)
+                    breakpoint()
+                    return s
+
+                print(total([3, 4]))""",
+                "breakpoint() вызвал свою функцию вместо pdb: строка и переменные")],
+              [pitfall("Забытый `breakpoint()` останавливает программу и ждёт команд: на сервере она просто зависнет.",
+                       bad='''
+                           breakpoint()
+                           save(order)''',
+                       good="save(order)"),
+               pitfall("С `python -O` выражение в `assert` не вычисляется вовсе, и `pop` не случится.",
+                       bad="assert items.pop() == last",
+                       good='''
+                           item = items.pop()
+                           assert item == last'''),
+               pitfall("Пустой `except` прячет ошибку, и отлаживать нечего. Напечатайте трассировку.",
+                       bad='''
+                           try:
+                               qty = int(raw)
+                           except ValueError:
+                               pass''',
+                       good='''
+                           try:
+                               qty = int(raw)
+                           except ValueError:
+                               traceback.print_exc()'''),
+               pitfall("`print` не показывает пробелы по краям и кавычки: `\"5 \"` и `5` выглядят одинаково.",
+                       bad="print(value)", good='print(f"{value=}")')]),
     ],
     tasks=[
         task("t_test_median", "Медиана с проверками",
@@ -1718,6 +1833,54 @@ MODULES.append(dict(
                 feedback={"DEBUG:shop:корзина: 3 товара\nINFO:shop:оплата принята\nERROR:shop:склад недоступен": "Порог — INFO: DEBUG не проходит.",
                           "оплата принята\nсклад недоступен": "format добавляет уровень и имя логгера.",
                           "ERROR:shop:склад недоступен": "INFO не ниже порога INFO — сообщение выводится."}),
+        predict("py_test_012", "Отладочная печать", """\
+                raw = ["3", " 4", "5 "]
+                nums = [x.strip() for x in raw]
+                print(f"{raw[1]=}")
+                print(f"{nums=}")
+                print(sum(map(int, nums)))""",
+                ["raw[1]=4\nnums=['3', '4', '5']\n12", "raw[1]=' 4'\nnums=[3, 4, 5]\n12",
+                 "' 4'\n['3', '4', '5']\n12"], position=1, topic="test_debug",
+                hint="Знак = в конце поля f-строки печатает само выражение и repr его значения.",
+                explanation="f\"{выражение=}\" выводит текст выражения, знак = и значение через repr: строка — в кавычках, пробел виден. strip убрал пробелы, но элементы остались строками, а сумму считает int.",
+                feedback={"raw[1]=4\nnums=['3', '4', '5']\n12": "Значение показывается через repr: строка в кавычках, и пробел перед 4 виден.",
+                          "raw[1]=' 4'\nnums=[3, 4, 5]\n12": "strip возвращает строки, числами они становятся только внутри sum(map(int, ...)).",
+                          "' 4'\n['3', '4', '5']\n12": "С = в конце поля печатается и само выражение: raw[1]=."}),
+        categorize("py_test_013", "Команды pdb", "Разложите команды отладчика pdb по назначению",
+                   ["Продвинуть выполнение", "Показать состояние", "Точки остановки"],
+                   [("n", 0, "next — выполнить строку целиком и встать на следующей."),
+                    ("s", 0, "step — войти внутрь вызываемой функции."),
+                    ("c", 0, "continue — работать до следующей остановки."),
+                    ("p total", 1), ("l", 1, "list — показать код вокруг текущей строки."),
+                    ("w", 1, "where — цепочка вызовов, как в трассировке."),
+                    ("b 12", 2, "break — поставить точку остановки на строку 12."),
+                    ("cl", 2, "clear — убрать точки остановки.")],
+                   code_items=True, topic="test_debug", difficulty=2,
+                   hint="Команды pdb — первые буквы английских слов: next, step, continue, print, list, where, break, clear.",
+                   explanation="n, s и c двигают программу дальше по-разному: строка, вход в функцию, до остановки. p, l и w ничего не выполняют, а показывают значение, код и цепочку вызовов. b ставит точку остановки, cl убирает."),
+        true_false("py_test_014", "Отладка без отладчика", "Верно ли утверждение?",
+                   [("traceback.format_exc() в except возвращает трассировку строкой", True),
+                    ("traceback.print_exc() останавливает программу", False,
+                     "Она только печатает трассировку: программа идёт дальше."),
+                    ("При обычном запуске __debug__ равно True", True),
+                    ("breakpoint() можно вызвать только внутри функции", False,
+                     "Его вызывают в любом месте, и на уровне модуля тоже."),
+                    ("f\"{x=}\" печатает имя и значение: x=5", True)],
+                   check=lambda text: {
+                       "traceback.format_exc() в except возвращает трассировку строкой": output_of(
+                           "import traceback\ntry:\n    1 / 0\nexcept ZeroDivisionError:\n"
+                           "    t = traceback.format_exc()\nprint(type(t).__name__, t.startswith('Traceback'))") == "str True\n",
+                       "traceback.print_exc() останавливает программу": not output_of(
+                           "import sys, traceback\ntry:\n    1 / 0\nexcept ZeroDivisionError:\n"
+                           "    traceback.print_exc(file=sys.stdout)\nprint('дальше')").endswith("дальше\n"),
+                       "При обычном запуске __debug__ равно True": output_of("print(__debug__)") == "True\n",
+                       "breakpoint() можно вызвать только внутри функции": not runs(
+                           "import sys\nsys.breakpointhook = lambda *a, **k: None\nbreakpoint()"),
+                       "f\"{x=}\" печатает имя и значение: x=5": output_of("x = 5\nprint(f'{x=}')") == "x=5\n",
+                   }[text],
+                   topic="test_debug", difficulty=2,
+                   hint="print_exc только печатает. Что делает флаг -O с __debug__, и что без него?",
+                   explanation="format_exc возвращает трассировку строкой, print_exc печатает её и не прерывает программу. __debug__ равно True, пока не указан флаг -O. breakpoint() работает где угодно. {x=} печатает имя и значение."),
         predict("py_test_009", "Босс: заглушка вместо почты", """\
                 from unittest.mock import Mock
 

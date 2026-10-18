@@ -204,6 +204,28 @@
    "example": "with open(\"a.txt\", \"w\") as f:\n    f.write(\"hi\")\nprint(open(\"a.txt\").read())",
    "output": "hi\n"
   },
+  "bytes": {
+   "brief": "Неизменяемая последовательность байтов, чисел от 0 до 255; литерал пишут с `b`: `b\"abc\"`.",
+   "topic": "files_bytes",
+   "example": "data = b\"Hi\"\nprint(data[0], list(data))",
+   "output": "72 [72, 105]\n"
+  },
+  ".encode": {
+   "brief": "Превращает строку в байты в заданной кодировке, обычно UTF-8.",
+   "topic": "files_bytes",
+   "example": "print(\"да\".encode(\"utf-8\"))",
+   "output": "b'\\xd0\\xb4\\xd0\\xb0'\n"
+  },
+  ".decode": {
+   "brief": "Превращает байты обратно в строку; кодировка должна совпасть.",
+   "topic": "files_bytes",
+   "example": "data = b\"\\xd0\\xb4\\xd0\\xb0\"\nprint(data.decode(\"utf-8\"))",
+   "output": "да\n"
+  },
+  "breakpoint": {
+   "brief": "Останавливает программу на этой строке и открывает отладчик `pdb`.",
+   "topic": "test_debug"
+  },
   "hash": {
    "brief": "Число-«отпечаток» значения для set и ключей dict.",
    "topic": "dunder_ops",
@@ -975,6 +997,16 @@
    "example": "class P:\n    def __init__(self, x):\n        self.x = x\nprint(P(3).x)",
    "output": "3\n"
   },
+  "__init__.py": {
+   "brief": "Файл, который делает папку пакетом; выполняется при импорте пакета.",
+   "topic": "proj_modules"
+  },
+  "__debug__": {
+   "brief": "`True` при обычном запуске, `False` с флагом `python -O`: тогда `assert` пропускаются.",
+   "topic": "test_debug",
+   "example": "print(__debug__)",
+   "output": "True\n"
+  },
   "__str__": {
    "brief": "Текст объекта для людей: его показывают `print` и `str`.",
    "topic": "dunder_str",
@@ -1091,7 +1123,7 @@
   },
   "__name__ == \"__main__\"": {
    "brief": "Код, который выполняется только при запуске файла, а не при импорте.",
-   "topic": "proj_structure",
+   "topic": "proj_modules",
    "example": "if __name__ == \"__main__\":\n    print(\"запущен напрямую\")",
    "output": "запущен напрямую\n"
   },
@@ -1595,6 +1627,32 @@
    "example": "import sys\nprint(\"пока\")\nsys.exit(0)",
    "output": "пока\n"
   },
+  "sys.path": {
+   "brief": "Список папок, в которых `import` ищет модули; первой идёт папка запущенного файла.",
+   "topic": "proj_modules",
+   "example": "import sys\nprint(type(sys.path).__name__)",
+   "output": "list\n"
+  },
+  "sys.modules": {
+   "brief": "Словарь уже загруженных модулей: повторный `import` берёт модуль отсюда.",
+   "topic": "proj_modules",
+   "example": "import sys, json\nprint(\"json\" in sys.modules)",
+   "output": "True\n"
+  },
+  "pdb": {
+   "brief": "Встроенный отладчик: пошаговое выполнение и просмотр переменных.",
+   "topic": "test_debug"
+  },
+  "traceback": {
+   "brief": "Модуль для работы с трассировкой ошибки.",
+   "topic": "exc_traceback"
+  },
+  "traceback.print_exc": {
+   "brief": "Печатает (или возвращает строкой) трассировку текущей ошибки, не останавливая программу.",
+   "topic": "test_debug",
+   "example": "import sys, traceback\ntry:\n    1 / 0\nexcept ZeroDivisionError:\n    t = traceback.format_exc()\nprint(t.splitlines()[-1])",
+   "output": "ZeroDivisionError: division by zero\n"
+  },
   "asyncio.run": {
    "brief": "Запускает корутину и цикл событий.",
    "topic": "async_basics",
@@ -1763,6 +1821,12 @@
    "example": "try: open(\"nope.txt\")\nexcept FileNotFoundError:\n    print(\"нет файла\")",
    "output": "нет файла\n"
   },
+  "UnicodeDecodeError": {
+   "brief": "Байты не читаются в указанной кодировке: файл записан в другой.",
+   "topic": "files_bytes",
+   "example": "try: b\"\\xff\".decode(\"utf-8\")\nexcept UnicodeDecodeError as e:\n    print(e.reason)",
+   "output": "invalid start byte\n"
+  },
   "Exception": {
    "brief": "Общий предок почти всех ошибок; `except Exception` ловит их все.",
    "topic": "exc_types",
@@ -1914,6 +1978,10 @@
    "topic": "std_import",
    "example": "import math\nprint(math.__name__)",
    "output": "math\n"
+  },
+  "пакет": {
+   "brief": "Папка с модулями и файлом `__init__.py`; имена из неё импортируют через точку.",
+   "topic": "proj_modules"
   },
   "объект": {
    "brief": "Метод это функция внутри объекта, атрибут это переменная внутри объекта.",

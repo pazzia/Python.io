@@ -214,6 +214,8 @@ MODULES.append(dict(
 
               Значения по запросу выдают [[gen_yield|генераторы]], `map`, `filter`, `zip` и открытый файл. `range` тоже не хранит числа, а вычисляет их.
 
+              Если перебор остановился раньше — `any` нашёл истину, сработал `break`, — остальные значения не считаются вовсе. Сколько памяти экономит генератор — в теме [[perf_tricks|Быстрые идиомы и память]].
+
               ## Конвейер
 
               Генераторы соединяют в цепочку: каждый берёт значения у предыдущего.
@@ -239,14 +241,15 @@ MODULES.append(dict(
               `batched(поток, n)` режет поток на пачки по `n` (с Python 3.12).
               """,
               [("""\
-                import sys
+                def is_big(price):
+                    print("проверяю", price)
+                    return price > 20
 
-                nums = [x * x for x in range(10_000)]
-                lazy = (x * x for x in range(10_000))
-                print(sys.getsizeof(nums) > 30_000)
-                print(sys.getsizeof(lazy) < 300)
-                print(sum(lazy))""",
-                "Список занимает десятки килобайт, генератор — пару сотен байт"),
+                prices = [5, 30, 7, 50]
+                print(any(is_big(p) for p in prices))
+                print("---")
+                print(any([is_big(p) for p in prices]))""",
+                "Генератор остановился на 30, список проверил все цены заранее"),
                ("""\
                 lines = ["10", " ", "7 ", "x", "3"]
                 clean = (s.strip() for s in lines)
@@ -1501,7 +1504,15 @@ MODULES.append(dict(
 
                 print(twice(lambda n: n + 3, 1))""",
                 "Callable описывает функцию: принимает int, возвращает int")],
-              [pitfall("Ждать, что аннотация защитит от неверного типа при выполнении: проверяет анализатор или ваш код."),
+              [pitfall("Аннотация не остановит `pay(\"5\")`: вернётся `\"55\"`. Данные извне проверяйте сами.",
+                       bad='''
+                           def pay(amount: int) -> int:
+                               return amount * 2''',
+                       good='''
+                           def pay(amount: int) -> int:
+                               if not isinstance(amount, int):
+                                   raise TypeError("нужно int")
+                               return amount * 2'''),
                pitfall("`List` без импорта: `NameError: name 'List' is not defined`. Сейчас пишут {`list[int]`}.",
                        bad="def total(xs: List[int]): ...", good="def total(xs: list[int]): ..."),
                pitfall("Параметр со значением `None` по умолчанию имеет тип `str | None`, а не `str`.",
@@ -1586,7 +1597,13 @@ MODULES.append(dict(
                            @runtime_checkable
                            class Reader(Protocol):
                                def read(self) -> str: ...'''),
-               pitfall("`@runtime_checkable` проверяет только имена: объект с `read = 5` тоже пройдёт `isinstance`."),
+               pitfall("`@runtime_checkable` проверяет только имена: объект с `read = 5` пройдёт `isinstance`, а вызов упадёт.",
+                       bad='''
+                           if isinstance(src, Reader):
+                               text = src.read()''',
+                       good='''
+                           if callable(getattr(src, "read", None)):
+                               text = src.read()'''),
                pitfall("Протокол — описание, а не класс для объектов: `TypeError: Protocols cannot be instantiated`.",
                        bad="src = Reader()", good="src = Disk()")]),
         topic("typing_generics", "Дженерики и псевдонимы типов",
@@ -1656,7 +1673,13 @@ MODULES.append(dict(
                        bad="isinstance(uid, UserId)", good="isinstance(uid, int)"),
                pitfall("`T` без объявления в {`[T]`}: `NameError: name 'T' is not defined`.",
                        bad="def first(items: list[T]) -> T: ...", good="def first[T](items: list[T]) -> T: ..."),
-               pitfall("Ждать, что {`Stack[int]`} не примет строку: при выполнении типы не проверяются, это делает анализатор.")]),
+               pitfall("{`Stack[int]`} при запуске примет и строку: ошибку покажет только анализатор. Приводите тип сами.",
+                       bad='''
+                           s = Stack[int]()
+                           s.push(input())''',
+                       good='''
+                           s = Stack[int]()
+                           s.push(int(input()))''')]),
         topic("typing_typeddict", "TypedDict, Literal и Final",
               "`TypedDict` описывает ключи словаря, `Literal` — допустимые значения, `Final` — константу; это подсказки анализатору.",
               """
@@ -1722,9 +1745,30 @@ MODULES.append(dict(
                 print(arrange([3, 1, 2], "asc"))
                 print(arrange([3, 1, 2], "desc"))""",
                 "Literal перечисляет допустимые строки-режимы")],
-              [pitfall("Ждать, что {`TypedDict`} проверит значения при создании: это обычный `dict`, проверку пишут сами."),
-               pitfall("{`Literal`} не мешает передать другое значение при запуске: ошибку покажет только анализатор."),
-               pitfall("`Final` не запрещает присваивание при выполнении: `LIMIT = 4` сработает, предупредит анализатор.")]),
+              [pitfall("{`TypedDict`} ничего не проверяет при создании: это обычный `dict`. Данные из JSON проверяют сами.",
+                       bad='''
+                           song: Song = json.loads(text)
+                           print(song["year"] + 1)''',
+                       good='''
+                           song: Song = json.loads(text)
+                           if not isinstance(song["year"], int):
+                               raise ValueError("year — не число")'''),
+               pitfall("{`Literal`} при запуске пропустит опечатку: с `\"down\"` список молча отсортируется по возрастанию.",
+                       bad='''
+                           def arrange(xs, order: Order):
+                               return sorted(xs, reverse=order == "desc")''',
+                       good='''
+                           def arrange(xs, order: Order):
+                               if order not in get_args(Order):
+                                   raise ValueError(order)
+                               return sorted(xs, reverse=order == "desc")'''),
+               pitfall("`Final` не запрещает присваивание при выполнении: `LIMIT = 4` сработает, предупредит только анализатор.",
+                       bad='''
+                           LIMIT: Final = 3
+                           LIMIT = 4''',
+                       good='''
+                           LIMIT: Final = 3
+                           limit = LIMIT + 1''')]),
     ],
     tasks=[
         task("t_typing_parse", "Разбор настроек",

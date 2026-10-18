@@ -127,6 +127,17 @@ term("next", "gen_iter",
 term("open", "files_open",
      brief="Открывает файл; закрывать удобнее через `with`.",
      example='with open("a.txt", "w") as f:\n    f.write("hi")\nprint(open("a.txt").read())')
+term("bytes", "files_bytes",
+     brief="Неизменяемая последовательность байтов, чисел от 0 до 255; литерал пишут с `b`: `b\"abc\"`.",
+     example='data = b"Hi"\nprint(data[0], list(data))')
+term(".encode", "files_bytes", match=("str.encode",),
+     brief="Превращает строку в байты в заданной кодировке, обычно UTF-8.",
+     example='print("да".encode("utf-8"))')
+term(".decode", "files_bytes", match=("bytes.decode",),
+     brief="Превращает байты обратно в строку; кодировка должна совпасть.",
+     example='data = b"\\xd0\\xb4\\xd0\\xb0"\nprint(data.decode("utf-8"))')
+term("breakpoint", "test_debug",
+     brief="Останавливает программу на этой строке и открывает отладчик `pdb`.")
 term("hash", "dunder_ops",
      brief="Число-«отпечаток» значения для set и ключей dict.",
      example='print(hash(5))\nt = (1, 2)\nprint(hash(t) == hash((1, 2)))')
@@ -526,6 +537,11 @@ term("__init__", "oop_class",
      brief="Настраивает только что созданный объект.",
      example=('class P:\n    def __init__(self, x):\n'
               '        self.x = x\nprint(P(3).x)'))
+term("__init__.py", "proj_modules",
+     brief="Файл, который делает папку пакетом; выполняется при импорте пакета.")
+term("__debug__", "test_debug",
+     brief="`True` при обычном запуске, `False` с флагом `python -O`: тогда `assert` пропускаются.",
+     example='print(__debug__)')
 term("__str__", "dunder_str",
      brief="Текст объекта для людей: его показывают `print` и `str`.",
      example=('class P:\n    def __str__(self):\n'
@@ -605,7 +621,7 @@ term("__match_args__", "idiom_match",
      example=('class P:\n    __match_args__ = ("x",)\n'
               '    def __init__(s, x): s.x = x\n'
               'match P(5):\n    case P(n): print(n)'))
-term('__name__ == "__main__"', "proj_structure", match=("__name__",),
+term('__name__ == "__main__"', "proj_modules", match=("__name__",),
      brief="Код, который выполняется только при запуске файла, а не при импорте.",
      example='if __name__ == "__main__":\n    print("запущен напрямую")')
 
@@ -951,6 +967,20 @@ term("sys.argv", "proj_structure",
 term("sys.exit", "proj_structure",
      brief="Завершает программу с кодом выхода; 0 значит успех.",
      example='import sys\nprint("пока")\nsys.exit(0)')
+term("sys.path", "proj_modules",
+     brief="Список папок, в которых `import` ищет модули; первой идёт папка запущенного файла.",
+     example='import sys\nprint(type(sys.path).__name__)')
+term("sys.modules", "proj_modules",
+     brief="Словарь уже загруженных модулей: повторный `import` берёт модуль отсюда.",
+     example='import sys, json\nprint("json" in sys.modules)')
+term("pdb", "test_debug",
+     brief="Встроенный отладчик: пошаговое выполнение и просмотр переменных.")
+term("traceback", "exc_traceback",
+     brief="Модуль для работы с трассировкой ошибки.")
+term("traceback.print_exc", "test_debug", match=("print_exc", "traceback.format_exc", "format_exc"),
+     brief="Печатает (или возвращает строкой) трассировку текущей ошибки, не останавливая программу.",
+     example=('import sys, traceback\ntry:\n    1 / 0\nexcept ZeroDivisionError:\n'
+              '    t = traceback.format_exc()\nprint(t.splitlines()[-1])'))
 term("asyncio.run", "async_basics",
      brief="Запускает корутину и цикл событий.",
      example=('import asyncio\nasync def main():\n'
@@ -1067,6 +1097,10 @@ term("ZeroDivisionError", "exc_types",
 term("FileNotFoundError", "exc_types",
      brief="Файла с таким именем нет.",
      example='try: open("nope.txt")\nexcept FileNotFoundError:\n    print("нет файла")')
+term("UnicodeDecodeError", "files_bytes",
+     brief="Байты не читаются в указанной кодировке: файл записан в другой.",
+     example=('try: b"\\xff".decode("utf-8")\n'
+              'except UnicodeDecodeError as e:\n    print(e.reason)'))
 term("Exception", "exc_types",
      brief="Общий предок почти всех ошибок; `except Exception` ловит их все.",
      example='try: 1 / 0\nexcept Exception as e:\n    print(type(e).__name__)')
@@ -1158,6 +1192,8 @@ term("исключение", "exc_try", auto=False,
 term("модуль", "std_import", auto=False,
      brief="Модуль это файл `.py`, пакет это папка с модулями.",
      example='import math\nprint(math.__name__)')
+term("пакет", "proj_modules", auto=False,
+     brief="Папка с модулями и файлом `__init__.py`; имена из неё импортируют через точку.")
 term("объект", "oop_class", auto=False,
      brief="Метод это функция внутри объекта, атрибут это переменная внутри объекта.",
      example='s = "кот"\nprint(s.upper())')

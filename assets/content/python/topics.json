@@ -2602,6 +2602,57 @@
    "module": "files"
   },
   {
+   "id": "files_bytes",
+   "title": "Байты и кодировки",
+   "summary": "`bytes` — последовательность чисел от 0 до 255; кодировка задаёт, как текст `str` превращается в байты и обратно.",
+   "body": "Диск и сеть хранят не буквы, а байты. Текст перед записью кодируют в байты, а при чтении декодируют обратно. Картинки, архивы и звук — только байты, текста в них нет.\n\n## Как записать\n\n```syntax\nданные = строка.encode(\"utf-8\")\nстрока = данные.decode(\"utf-8\")\n\nwith open(путь, \"rb\") as f:\n    данные = f.read()\n```\n\nЛитерал байтов пишут с буквой `b`: `b\"PNG\"`. Внутри — только латиница и коды вида `\\xd0`. Элемент `bytes` по индексу — число: `b\"A\"[0]` даёт `65`.\n\n## UTF-8: разная длина\n\nUTF-8 — самая распространённая кодировка. Символ занимает в ней от 1 до 4 байт:\n\n| Символ | Байт в UTF-8 |\n|---|---|\n| `a`, `7`, пробел | 1 |\n| `я`, `ё` | 2 |\n| `€` | 3 |\n\nПоэтому `len(строки)` считает символы, а длину в байтах даёт `len(строка.encode())`. Лимиты сообщений и полей в базе часто заданы в байтах.\n\n## Не та кодировка\n\nБайты, записанные в одной кодировке, нельзя читать в другой. Текст в `cp1251` (старая кодировка Windows) при `decode(\"utf-8\")` даёт `UnicodeDecodeError`. Параметр `errors=\"replace\"` заменяет испорченные байты значком вместо ошибки.\n\n## Двоичный режим файла\n\nБуква `b` в режиме [[files_open|open]] — `\"rb\"`, `\"wb\"` — включает двоичный режим. `read` возвращает `bytes`, а `write` принимает только `bytes`. Параметр `encoding` в этом режиме запрещён: перевода в текст нет.",
+   "examples": [
+    {
+     "code": "word = \"кот\"\ndata = word.encode(\"utf-8\")\nprint(data)\nprint(len(word), len(data))\nprint(data.decode(\"utf-8\"))",
+     "output": "b'\\xd0\\xba\\xd0\\xbe\\xd1\\x82'\n3 6\nкот\n",
+     "note": "3 символа стали 6 байтами; decode вернул строку"
+    },
+    {
+     "code": "path = \"note.txt\"\nwith open(path, \"w\", encoding=\"utf-8\") as f:\n    f.write(\"да\\n\")\n\nwith open(path, \"rb\") as f:\n    raw = f.read()\nprint(raw)\nprint(len(raw))",
+     "output": "b'\\xd0\\xb4\\xd0\\xb0\\n'\n5\n",
+     "note": "Режим rb показал файл как есть: 4 байта букв и \\n"
+    },
+    {
+     "code": "data = \"привет\".encode(\"cp1251\")\ntry:\n    data.decode(\"utf-8\")\nexcept UnicodeDecodeError as e:\n    print(\"ошибка:\", e.reason)\nprint(data.decode(\"cp1251\"))",
+     "output": "ошибка: invalid continuation byte\nпривет\n",
+     "note": "Чужая кодировка — UnicodeDecodeError, своя — исходный текст"
+    },
+    {
+     "code": "head = bytes([137, 80, 78, 71])\nwith open(\"pic.png\", \"wb\") as f:\n    f.write(head)\n\nwith open(\"pic.png\", \"rb\") as f:\n    sign = f.read(4)\nprint(sign)\nprint(sign[0], sign[1:] == b\"PNG\")",
+     "output": "b'\\x89PNG'\n137 True\n",
+     "note": "Байт 137 не символ ASCII, поэтому он показан кодом \\x89"
+    }
+   ],
+   "pitfalls": [
+    {
+     "why": "Строку и байты не сложить: TypeError: can only concatenate str (not \"bytes\") to str.",
+     "bad": "text = \"ID: \" + data",
+     "good": "text = \"ID: \" + data.decode(\"utf-8\")"
+    },
+    {
+     "why": "В режиме `\"wb\"` `write` ждёт байты: TypeError: a bytes-like object is required, not 'str'.",
+     "bad": "f.write(\"готово\")",
+     "good": "f.write(\"готово\".encode(\"utf-8\"))"
+    },
+    {
+     "why": "Двоичный режим не принимает `encoding`: ValueError: binary mode doesn't take an encoding argument.",
+     "bad": "open(path, \"rb\", encoding=\"utf-8\")",
+     "good": "open(path, \"rb\")"
+    },
+    {
+     "why": "Лимит в байтах по `len(строки)` не проверить: кириллица занимает по 2 байта.",
+     "bad": "if len(text) <= 70:\n    send(text)",
+     "good": "if len(text.encode(\"utf-8\")) <= 70:\n    send(text)"
+    }
+   ],
+   "module": "files"
+  },
+  {
    "id": "std_import",
    "title": "Импорт модулей",
    "summary": "`import` подключает модуль — файл с готовыми функциями, чтобы не писать их заново.",
@@ -3117,7 +3168,14 @@
    ],
    "pitfalls": [
     {
-     "why": "Думать, что `super()` всегда вызывает прямого родителя: он берёт следующий класс в MRO объекта."
+     "why": "Примесь без `super()` обрывает цепочку: `save` следующего класса в MRO не вызовется.",
+     "bad": "class LogMixin:\n    def save(self):\n        print(\"лог\")",
+     "good": "class LogMixin:\n    def save(self):\n        print(\"лог\")\n        super().save()"
+    },
+    {
+     "why": "Примесь, указанная после основного класса, не срабатывает: его `save` в MRO находится первым.",
+     "bad": "class Doc(Storage, LogMixin):\n    pass",
+     "good": "class Doc(LogMixin, Storage):\n    pass"
     },
     {
      "why": "Явный вызов родителя в «ромбе» запускает общего предка дважды, а `super()` — один раз.",
@@ -3410,7 +3468,9 @@
    ],
    "pitfalls": [
     {
-     "why": "Считать атрибут с `__` надёжно скрытым: по имени `_Класс__атрибут` он доступен."
+     "why": "Снаружи `safe.__code` не найдётся: имя искажено в `_Safe__code`, будет `AttributeError`. Дайте свойство для чтения.",
+     "bad": "print(safe.__code)",
+     "good": "class Safe:\n    @property\n    def code(self):\n        return self.__code\n\nprint(safe.code)"
     },
     {
      "why": "Атрибут, которого нет в `__slots__`, нельзя создать даже в `__init__`: `AttributeError`.",
@@ -3596,12 +3656,12 @@
    "id": "gen_lazy",
    "title": "Ленивые вычисления и конвейеры",
    "summary": "Ленивые вычисления считают каждое значение только тогда, когда его просят, и не держат весь поток в памяти.",
-   "body": "Список хранит все значения сразу. Если строк в файле миллион, а нужна первая подходящая, считать и хранить остальные незачем. Генераторы считают значения по требованию.\n\n## Ленивое и жадное\n\n- `[x * 2 for x in data]` — список: всё считается сразу и лежит в памяти.\n- `(x * 2 for x in data)` — генераторное выражение: значения считаются по одному.\n\nЗначения по запросу выдают [[gen_yield|генераторы]], [[fn_builtins|`map`|map]], `filter`, `zip` и открытый файл. `range` тоже не хранит числа, а вычисляет их.\n\n## Конвейер\n\nГенераторы соединяют в цепочку: каждый берёт значения у предыдущего.\n\n```syntax\nчистые = (s.strip() for s in источник)\nнепустые = (s for s in чистые if s)\nчисла = (int(s) for s in непустые)\n```\n\nПока результат не перебирают, ничего не считается. При переборе каждое значение проходит всю цепочку, и только потом берётся следующее. В памяти одновременно одно значение.\n\n## Бесконечный поток\n\nГенератор с `while True` сам не заканчивается. Из него берут столько, сколько нужно:\n\n- `islice(поток, n)` из [[std_itertools|itertools]] — первые `n` значений;\n- [[gen_iter|`next(поток)`|next]] — одно значение;\n- цикл `for` с [[loopx_break|break]].\n\n`list`, `sum` и [[list_methods|`sorted`|sorted]] перебирают поток до конца: на бесконечном генераторе программа зависнет.\n\n`batched(поток, n)` режет поток на пачки по `n` (с Python 3.12).",
+   "body": "Список хранит все значения сразу. Если строк в файле миллион, а нужна первая подходящая, считать и хранить остальные незачем. Генераторы считают значения по требованию.\n\n## Ленивое и жадное\n\n- `[x * 2 for x in data]` — список: всё считается сразу и лежит в памяти.\n- `(x * 2 for x in data)` — генераторное выражение: значения считаются по одному.\n\nЗначения по запросу выдают [[gen_yield|генераторы]], [[fn_builtins|`map`|map]], `filter`, `zip` и открытый файл. `range` тоже не хранит числа, а вычисляет их.\n\nЕсли перебор остановился раньше — `any` нашёл истину, сработал `break`, — остальные значения не считаются вовсе. Сколько памяти экономит генератор — в теме [[perf_tricks|Быстрые идиомы и память]].\n\n## Конвейер\n\nГенераторы соединяют в цепочку: каждый берёт значения у предыдущего.\n\n```syntax\nчистые = (s.strip() for s in источник)\nнепустые = (s for s in чистые if s)\nчисла = (int(s) for s in непустые)\n```\n\nПока результат не перебирают, ничего не считается. При переборе каждое значение проходит всю цепочку, и только потом берётся следующее. В памяти одновременно одно значение.\n\n## Бесконечный поток\n\nГенератор с `while True` сам не заканчивается. Из него берут столько, сколько нужно:\n\n- `islice(поток, n)` из [[std_itertools|itertools]] — первые `n` значений;\n- [[gen_iter|`next(поток)`|next]] — одно значение;\n- цикл `for` с [[loopx_break|break]].\n\n`list`, `sum` и [[list_methods|`sorted`|sorted]] перебирают поток до конца: на бесконечном генераторе программа зависнет.\n\n`batched(поток, n)` режет поток на пачки по `n` (с Python 3.12).",
    "examples": [
     {
-     "code": "import sys\n\nnums = [x * x for x in range(10_000)]\nlazy = (x * x for x in range(10_000))\nprint(sys.getsizeof(nums) > 30_000)\nprint(sys.getsizeof(lazy) < 300)\nprint(sum(lazy))",
-     "output": "True\nTrue\n333283335000\n",
-     "note": "Список занимает десятки килобайт, генератор — пару сотен байт"
+     "code": "def is_big(price):\n    print(\"проверяю\", price)\n    return price > 20\n\nprices = [5, 30, 7, 50]\nprint(any(is_big(p) for p in prices))\nprint(\"---\")\nprint(any([is_big(p) for p in prices]))",
+     "output": "проверяю 5\nпроверяю 30\nTrue\n---\nпроверяю 5\nпроверяю 30\nпроверяю 7\nпроверяю 50\nTrue\n",
+     "note": "Генератор остановился на 30, список проверил все цены заранее"
     },
     {
      "code": "lines = [\"10\", \" \", \"7 \", \"x\", \"3\"]\nclean = (s.strip() for s in lines)\ndigits = (s for s in clean\n          if s.isdigit())\nnums = (int(s) for s in digits)\nprint(sum(nums))",
@@ -3846,7 +3906,9 @@
    ],
    "pitfalls": [
     {
-     "why": "Ждать, что аннотация защитит от неверного типа при выполнении: проверяет анализатор или ваш код."
+     "why": "Аннотация не остановит `pay(\"5\")`: вернётся `\"55\"`. Данные извне проверяйте сами.",
+     "bad": "def pay(amount: int) -> int:\n    return amount * 2",
+     "good": "def pay(amount: int) -> int:\n    if not isinstance(amount, int):\n        raise TypeError(\"нужно int\")\n    return amount * 2"
     },
     {
      "why": "`List` без импорта: `NameError: name 'List' is not defined`. Сейчас пишут `list[int]`.",
@@ -3890,7 +3952,9 @@
      "good": "@runtime_checkable\nclass Reader(Protocol):\n    def read(self) -> str: ..."
     },
     {
-     "why": "`@runtime_checkable` проверяет только имена: объект с `read = 5` тоже пройдёт `isinstance`."
+     "why": "`@runtime_checkable` проверяет только имена: объект с `read = 5` пройдёт `isinstance`, а вызов упадёт.",
+     "bad": "if isinstance(src, Reader):\n    text = src.read()",
+     "good": "if callable(getattr(src, \"read\", None)):\n    text = src.read()"
     },
     {
      "why": "Протокол — описание, а не класс для объектов: `TypeError: Protocols cannot be instantiated`.",
@@ -3934,7 +3998,9 @@
      "good": "def first[T](items: list[T]) -> T: ..."
     },
     {
-     "why": "Ждать, что `Stack[int]` не примет строку: при выполнении типы не проверяются, это делает анализатор."
+     "why": "`Stack[int]` при запуске примет и строку: ошибку покажет только анализатор. Приводите тип сами.",
+     "bad": "s = Stack[int]()\ns.push(input())",
+     "good": "s = Stack[int]()\ns.push(int(input()))"
     }
    ],
    "module": "typing"
@@ -3963,13 +4029,19 @@
    ],
    "pitfalls": [
     {
-     "why": "Ждать, что `TypedDict` проверит значения при создании: это обычный `dict`, проверку пишут сами."
+     "why": "`TypedDict` ничего не проверяет при создании: это обычный `dict`. Данные из JSON проверяют сами.",
+     "bad": "song: Song = json.loads(text)\nprint(song[\"year\"] + 1)",
+     "good": "song: Song = json.loads(text)\nif not isinstance(song[\"year\"], int):\n    raise ValueError(\"year — не число\")"
     },
     {
-     "why": "`Literal` не мешает передать другое значение при запуске: ошибку покажет только анализатор."
+     "why": "`Literal` при запуске пропустит опечатку: с `\"down\"` список молча отсортируется по возрастанию.",
+     "bad": "def arrange(xs, order: Order):\n    return sorted(xs, reverse=order == \"desc\")",
+     "good": "def arrange(xs, order: Order):\n    if order not in get_args(Order):\n        raise ValueError(order)\n    return sorted(xs, reverse=order == \"desc\")"
     },
     {
-     "why": "`Final` не запрещает присваивание при выполнении: `LIMIT = 4` сработает, предупредит анализатор."
+     "why": "`Final` не запрещает присваивание при выполнении: `LIMIT = 4` сработает, предупредит только анализатор.",
+     "bad": "LIMIT: Final = 3\nLIMIT = 4",
+     "good": "LIMIT: Final = 3\nlimit = LIMIT + 1"
     }
    ],
    "module": "typing"
@@ -4472,6 +4544,57 @@
    "module": "testing"
   },
   {
+   "id": "test_debug",
+   "title": "Отладка: breakpoint() и pdb",
+   "summary": "Отладка — поиск места, где значения расходятся с ожиданием: программу останавливают или печатают данные по пути.",
+   "body": "Программа не падает, но результат не тот. Тест показывает, что ошибка есть, а отладка — где именно. Для этого смотрят значения переменных в нужный момент.\n\n## Как записать\n\n```syntax\ndef функция():\n    действия\n    breakpoint()\n    другие_действия\n```\n\n`breakpoint()` останавливает программу на этой строке и открывает отладчик `pdb`. Дальше команды вводят с клавиатуры. В приложении ввода во время работы нет, поэтому отладчик здесь не запустится: пользуйтесь им на компьютере.\n\n## Команды pdb\n\n| Команда | Что делает |\n|---|---|\n| `n` | следующая строка |\n| `s` | войти в вызов функции |\n| `c` | продолжить до остановки |\n| `p выражение` | показать значение |\n| `l` | код вокруг строки |\n| `w` | цепочка вызовов |\n| `q` | выйти |\n\nВсю программу под отладчиком запускают так: `python -m pdb файл.py`. Переменная окружения `PYTHONBREAKPOINT=0` отключает все `breakpoint()` разом.\n\n## Без отладчика\n\n- `print(f\"{x=}\")` — имя и точное значение одной строкой\n- [[test_assert|`assert условие`|assert]] — падает там, где предположение нарушено\n- `traceback.print_exc()` в [[exc_try|`except`|except]] — [[exc_traceback|трассировка]] без остановки\n- [[test_logging|`logging.debug`]] — сообщения, которые выключаются уровнем\n\n## __debug__ и флаг -O\n\nПри обычном запуске `__debug__` равно `True`. С флагом `python -O` оно становится `False`, а все `assert` и блоки `if __debug__:` пропускаются. Поэтому внутри `assert` не пишут действия, которые должны выполниться.",
+   "examples": [
+    {
+     "code": "def average(marks):\n    total = sum(marks)\n    print(f\"{total=} {len(marks)=}\")\n    return total // len(marks)\n\nprint(average([4, 5, 5]))",
+     "output": "total=14 len(marks)=3\n4\n",
+     "note": "Отладочный print показал данные: виновато // вместо /"
+    },
+    {
+     "code": "def discount(price, pct):\n    assert 0 <= pct <= 100, f\"{pct=}\"\n    return price * (100 - pct) / 100\n\nprint(__debug__)\nprint(discount(200, 15))\ntry:\n    discount(200, 150)\nexcept AssertionError as e:\n    print(\"неверно:\", e)",
+     "output": "True\n170.0\nневерно: pct=150\n",
+     "note": "assert поймал неверный процент там, где он появился"
+    },
+    {
+     "code": "import sys\nimport traceback\n\ndef parse(line):\n    return int(line.split(\";\")[1])\n\nfor line in [\"чай;2\", \"сыр;x\", \"хлеб;1\"]:\n    try:\n        print(parse(line))\n    except ValueError:\n        traceback.print_exc(file=sys.stdout)",
+     "output": "2\nTraceback (most recent call last):\n  File \"main.py\", line 9, in <module>\n  File \"main.py\", line 5, in parse\nValueError: invalid literal for int() with base 10: 'x'\n1\n",
+     "note": "Трассировка напечатана, а цикл дошёл до третьей строки"
+    },
+    {
+     "code": "import sys\n\ndef show(*args, **kwargs):\n    caller = sys._getframe(1)\n    print(\"стоп, строка\", caller.f_lineno)\n    print(caller.f_locals)\n\nsys.breakpointhook = show\n\ndef total(prices):\n    s = sum(prices)\n    breakpoint()\n    return s\n\nprint(total([3, 4]))",
+     "output": "стоп, строка 12\n{'prices': [3, 4], 's': 7}\n7\n",
+     "note": "breakpoint() вызвал свою функцию вместо pdb: строка и переменные"
+    }
+   ],
+   "pitfalls": [
+    {
+     "why": "Забытый `breakpoint()` останавливает программу и ждёт команд: на сервере она просто зависнет.",
+     "bad": "breakpoint()\nsave(order)",
+     "good": "save(order)"
+    },
+    {
+     "why": "С `python -O` выражение в `assert` не вычисляется вовсе, и `pop` не случится.",
+     "bad": "assert items.pop() == last",
+     "good": "item = items.pop()\nassert item == last"
+    },
+    {
+     "why": "Пустой `except` прячет ошибку, и отлаживать нечего. Напечатайте трассировку.",
+     "bad": "try:\n    qty = int(raw)\nexcept ValueError:\n    pass",
+     "good": "try:\n    qty = int(raw)\nexcept ValueError:\n    traceback.print_exc()"
+    },
+    {
+     "why": "`print` не показывает пробелы по краям и кавычки: `\"5 \"` и `5` выглядят одинаково.",
+     "bad": "print(value)",
+     "good": "print(f\"{value=}\")"
+    }
+   ],
+   "module": "testing"
+  },
+  {
    "id": "async_basics",
    "title": "Корутины и цикл событий",
    "summary": "Корутина — функция `async def`, которая умеет ждать, не останавливая остальные задачи программы.",
@@ -4796,7 +4919,7 @@
    "id": "conc_processes",
    "title": "Процессы",
    "summary": "Процессы — отдельные копии интерпретатора, которые считают на нескольких ядрах процессора одновременно.",
-   "body": "Расчёт на чистом Python занимает одно ядро, даже если их восемь: [[conc_threads|GIL]] не даёт потокам считать одновременно. Процессы обходят это ограничение — у каждого свой интерпретатор и свой GIL.\n\n## Как записать\n\n```syntax\nfrom concurrent.futures import ProcessPoolExecutor\n\nif __name__ == \"__main__\":\n    with ProcessPoolExecutor() as pool:\n        результаты = list(pool.map(функция, данные))\n```\n\nИнтерфейс тот же, что у [[conc_pool|пула потоков]]: `map`, `submit`, `as_completed`. Модуль `multiprocessing` даёт то же на более низком уровне.\n\n## Цена процессов\n\n- Запуск процесса дороже, чем запуск потока.\n- Общей памяти у процессов нет: аргументы и результаты передаются через [[data_json|сериализацию]] модулем `pickle`.\n- Поэтому функцию объявляют на верхнем уровне модуля: [[fn_lambda_key|`lambda`|lambda]] и вложенные функции не сериализуются.\n\n## Зачем проверка __name__\n\nУ запущенного файла `__name__` равен `\"__main__\"`, у импортированного — имени модуля ([[proj_structure|точка входа]]). Новые процессы на Windows и macOS, а с Python 3.14 и на Linux импортируют главный модуль заново.\n\nБез проверки каждый из них снова создавал бы пул — Python останавливает это ошибкой `RuntimeError`. Проверку пишут всегда, ради переносимости.\n\n## Процессы в приложении\n\nВо встроенном Python приложения потоки и процессы эмулируются: они выполняются по очереди в одном настоящем потоке и переключаются там, где ждут (`sleep`, замок, очередь, `join`). Логика, порядок и синхронизация — как в обычном Python, но ускорения нет, а у «процессов» общая память.",
+   "body": "Расчёт на чистом Python занимает одно ядро, даже если их восемь: [[conc_threads|GIL]] не даёт потокам считать одновременно. Процессы обходят это ограничение — у каждого свой интерпретатор и свой GIL.\n\n## Как записать\n\n```syntax\nfrom concurrent.futures import ProcessPoolExecutor\n\nif __name__ == \"__main__\":\n    with ProcessPoolExecutor() as pool:\n        результаты = list(pool.map(функция, данные))\n```\n\nИнтерфейс тот же, что у [[conc_pool|пула потоков]]: `map`, `submit`, `as_completed`. Модуль `multiprocessing` даёт то же на более низком уровне.\n\n## Цена процессов\n\n- Запуск процесса дороже, чем запуск потока.\n- Общей памяти у процессов нет: аргументы и результаты передаются через [[data_json|сериализацию]] модулем `pickle`.\n- Поэтому функцию объявляют на верхнем уровне модуля: [[fn_lambda_key|`lambda`|lambda]] и вложенные функции не сериализуются.\n\n## Зачем проверка __name__\n\nУ запущенного файла [[proj_modules|`__name__`|__name__ == \"__main__\"]] равен `\"__main__\"`, у импортированного — имени модуля ([[proj_structure|точка входа]]). Новые процессы на Windows и macOS, а с Python 3.14 и на Linux импортируют главный модуль заново.\n\nБез проверки каждый из них снова создавал бы пул — Python останавливает это ошибкой `RuntimeError`. Проверку пишут всегда, ради переносимости.\n\n## Процессы в приложении\n\nВо встроенном Python приложения потоки и процессы эмулируются: они выполняются по очереди в одном настоящем потоке и переключаются там, где ждут (`sleep`, замок, очередь, `join`). Логика, порядок и синхронизация — как в обычном Python, но ускорения нет, а у «процессов» общая память.",
    "examples": [
     {
      "code": "from concurrent.futures import (\n    ProcessPoolExecutor)\n\nif __name__ == \"__main__\":\n    with ProcessPoolExecutor(2) as pool:\n        res = pool.map(pow, [2, 3, 4],\n                       [10, 2, 3])\n        print(list(res))",
@@ -4933,10 +5056,57 @@
    "module": "performance"
   },
   {
+   "id": "proj_modules",
+   "title": "Свои модули и пакеты",
+   "summary": "Свой файл `.py` подключают через `import` как модуль, а папка с модулями и `__init__.py` становится пакетом.",
+   "body": "Когда программа растёт, код раскладывают по файлам: расчёты отдельно, ввод и вывод отдельно. Свой файл подключают тем же `import`, что и [[std_import|модули стандартной библиотеки]].\n\n## Как записать\n\n```syntax\n# файл prices.py\ndef tax(цена):\n    return цена * 1.2\n\n# файл main.py в той же папке\nimport prices\nfrom prices import tax\n```\n\nИмя модуля — имя файла без `.py`. Поэтому файл называют как переменную: `my_tools.py`, а не `my-tools.py`.\n\n## Где Python ищет модули\n\nПапки поиска перечислены в списке `sys.path`. Первой идёт папка запущенного файла, затем стандартная библиотека и установленные пакеты. В примерах файлы создаются кодом, и папку добавляют в `sys.path` вручную.\n\n## Импорт выполняет модуль\n\nПри первом импорте код модуля выполняется сверху вниз, а сам модуль запоминается в `sys.modules`. Повторный `import` берёт готовый объект.\n\nУ импортированного модуля `__name__` — его имя, у запущенного файла — `\"__main__\"`. Код под `if __name__ == \"__main__\":` при импорте не выполняется. Как на этом строят файл программы — в теме [[proj_structure|Структура программы]].\n\n## Пакет и относительный импорт\n\nПакет — папка с модулями и файлом `__init__.py`. Этот файл выполняется при импорте пакета. Внутри пакета соседей импортируют с точкой:\n\n- `from . import prices` — модуль этого же пакета\n- `from .prices import tax` — имя из соседнего модуля\n- `from ..utils import log` — из пакета уровнем выше\n\nТочка работает только в модуле пакета. Поэтому файл пакета запускают из папки проекта как модуль: `python -m shop.cart`.",
+   "examples": [
+    {
+     "code": "import sys\nfrom pathlib import Path\n\nPath(\"greet.py\").write_text(\n    \"def hello(name):\\n\"\n    \"    return 'Привет, ' + name\\n\",\n    encoding=\"utf-8\")\nsys.path.insert(0, str(Path.cwd()))\n\nimport greet\nprint(greet.hello(\"Ада\"))",
+     "output": "Привет, Ада\n",
+     "note": "Файл greet.py стал модулем: import нашёл его через sys.path"
+    },
+    {
+     "code": "import sys\nfrom pathlib import Path\n\nPath(\"units.py\").write_text(\n    'print(\"units:\", __name__)\\n'\n    'if __name__ == \"__main__\":\\n'\n    '    print(\"демо units\")\\n',\n    encoding=\"utf-8\")\nsys.path.insert(0, str(Path.cwd()))\n\nimport units\nprint(\"main:\", __name__)",
+     "output": "units: units\nmain: __main__\n",
+     "note": "При импорте __name__ — имя модуля, блок __main__ пропущен"
+    },
+    {
+     "code": "import sys\nfrom pathlib import Path\n\npkg = Path(\"shop\")\npkg.mkdir()\n(pkg / \"prices.py\").write_text(\n    \"def tax(p):\\n    return p * 1.2\\n\")\n(pkg / \"__init__.py\").write_text(\n    \"from .prices import tax\\n\")\nsys.path.insert(0, str(Path.cwd()))\n\nfrom shop import tax\nprint(tax(50))",
+     "output": "60.0\n",
+     "note": "__init__.py поднял tax из shop.prices на уровень пакета"
+    },
+    {
+     "code": "print(__name__)\ntry:\n    from .prices import tax\nexcept ImportError as e:\n    print(e)",
+     "output": "__main__\nattempted relative import with no known parent package\n",
+     "note": "У запущенного файла нет пакета: импорт с точкой не работает"
+    }
+   ],
+   "pitfalls": [
+    {
+     "why": "Свой файл `random.py` рядом с программой заслоняет модуль стандартной библиотеки, и `random.randint` пропадает.",
+     "bad": "# файл random.py\nimport random\nprint(random.randint(1, 6))",
+     "good": "# файл dice.py\nimport random\nprint(random.randint(1, 6))"
+    },
+    {
+     "why": "Дефис в имени файла не даёт его импортировать: `import my-tools` — SyntaxError.",
+     "bad": "import my-tools",
+     "good": "import my_tools"
+    },
+    {
+     "why": "Запускать файл пакета как `python shop/cart.py`: импорт с точкой даст `ImportError`. Запускайте `python -m shop.cart` из папки проекта."
+    },
+    {
+     "why": "Повторный `import` не перечитывает изменённый файл: модуль уже лежит в `sys.modules`. Перезапустите программу."
+    }
+   ],
+   "module": "project"
+  },
+  {
    "id": "proj_structure",
    "title": "Структура программы",
    "summary": "Программа — набор функций с одной точкой входа `main()`, которая срабатывает только при запуске файла.",
-   "body": "Скрипт из двадцати строк можно писать сверху вниз. Когда строк сотни, код раскладывают по функциям, а запуск собирают в одном месте. Так программу проще читать, тестировать и подключать к другим.\n\n## Шаблон файла\n\n```syntax\n\"\"\"Что делает программа.\"\"\"\nimport sys\n\nКОНСТАНТА = значение\n\ndef функция():\n    действия\n\ndef main(argv):\n    действия\n    return 0\n\nif __name__ == \"__main__\":\n    sys.exit(main(sys.argv[1:]))\n```\n\nПорядок сверху вниз: описание модуля, импорты, константы, функции и классы, точка входа.\n\n## Что значит __name__\n\nКаждый файл `.py` — [[std_import|модуль]]. У запущенного файла `__name__` равен `\"__main__\"`, а при импорте — имени модуля. Поэтому код под проверкой выполняется при запуске и не выполняется при импорте: функции модуля можно подключать и тестировать.\n\n## Код выхода\n\n`main` возвращает число, а `sys.exit` передаёт его системе: `0` — успех, другое — ошибка. По коду выхода скрипты и сборочные системы понимают, удалась ли программа.\n\n`sys.argv` — список аргументов запуска, `sys.argv[0]` — имя самого файла. Разбирать аргументы удобнее модулем [[proj_cli_logging|argparse]].\n\n## Пакеты и окружение\n\n- Папка с модулями и файлом `__init__.py` — пакет: `from shop.cart import Cart`.\n- Зависимости проекта перечисляют в `pyproject.toml`.\n- Ставят их в виртуальное окружение: `python -m venv .venv`, у каждого проекта своё.\n\nКак оформлять сам код — в теме [[proj_style|PEP 8 и docstring]].",
+   "body": "Скрипт из двадцати строк можно писать сверху вниз. Когда строк сотни, код раскладывают по функциям, а запуск собирают в одном месте. Так программу проще читать, тестировать и подключать к другим.\n\n## Шаблон файла\n\n```syntax\n\"\"\"Что делает программа.\"\"\"\nimport sys\n\nКОНСТАНТА = значение\n\ndef функция():\n    действия\n\ndef main(argv):\n    действия\n    return 0\n\nif __name__ == \"__main__\":\n    sys.exit(main(sys.argv[1:]))\n```\n\nПорядок сверху вниз: описание модуля, импорты, константы, функции и классы, точка входа.\n\n## Что значит __name__\n\nКаждый файл `.py` — [[std_import|модуль]]. У запущенного файла `__name__` равен `\"__main__\"`, а при импорте — имени модуля. Поэтому код под проверкой выполняется при запуске и не выполняется при импорте: функции модуля можно подключать и тестировать.\n\n## Код выхода\n\n`main` возвращает число, а `sys.exit` передаёт его системе: `0` — успех, другое — ошибка. По коду выхода скрипты и сборочные системы понимают, удалась ли программа.\n\n`sys.argv` — список аргументов запуска, `sys.argv[0]` — имя самого файла. Разбирать аргументы удобнее модулем [[proj_cli_logging|argparse]].\n\n## Пакеты и окружение\n\n- Папка с модулями и файлом `__init__.py` — [[proj_modules|пакет]]: `from shop.cart import Cart`.\n- Зависимости проекта перечисляют в `pyproject.toml`.\n- Ставят их в виртуальное окружение: `python -m venv .venv`, у каждого проекта своё.\n\nКак оформлять сам код — в теме [[proj_style|PEP 8 и docstring]].",
    "examples": [
     {
      "code": "def area(w, h):\n    return w * h\n\nif __name__ == \"__main__\":\n    print(\"запуск как программы\")\n    print(area(3, 4))",
@@ -5045,7 +5215,7 @@
    "id": "proj_logging",
    "title": "logging в проекте",
    "summary": "В программе из нескольких модулей logging настраивают один раз, а каждый модуль пишет в свой логгер.",
-   "body": "Основы — уровни, `basicConfig`, формат — в теме [[test_logging|logging вместо print]]. Когда модулей много, нужен порядок: кто настраивает вывод, кто пишет сообщения и как заглушить один шумный модуль.\n\n## Как записать\n\n```syntax\n# в каждом модуле\nlog = logging.getLogger(__name__)\n\n# один раз в точке входа\ndef main():\n    logging.basicConfig(level=logging.INFO)\n```\n\n`getLogger` с одним и тем же именем всегда возвращает один и тот же объект. Имя [[proj_structure|`__name__`|__name__ == \"__main__\"]] совпадает с именем модуля, поэтому по сообщению видно, откуда оно пришло.\n\n## Дерево логгеров\n\nЛоггеры образуют дерево по точкам в имени: `shop.db` — потомок `shop`, а все вместе — потомки корневого логгера. Сообщение потомка доходит до вывода, который настроил `basicConfig` у корня.\n\nУровень можно задать отдельной ветке: `logging.getLogger(\"shop.db\").setLevel(logging.WARNING)` заглушит только её.\n\n## Аргументы — отдельно\n\n`log.info(\"файл %s\", name)` подставляет аргументы, только если сообщение действительно пишется. f-строку Python собирает всегда, даже когда уровень выключен.\n\n## print или logging\n\n`print` — для результата программы: его читает пользователь или следующая программа. `logging` — для диагностики: что происходило и где сломалось.",
+   "body": "Основы — уровни, `basicConfig`, формат — в теме [[test_logging|logging вместо print]]. Когда модулей много, нужен порядок: кто настраивает вывод, кто пишет сообщения и как заглушить один шумный модуль.\n\n## Как записать\n\n```syntax\n# в каждом модуле\nlog = logging.getLogger(__name__)\n\n# один раз в точке входа\ndef main():\n    logging.basicConfig(level=logging.INFO)\n```\n\n`getLogger` с одним и тем же именем всегда возвращает один и тот же объект. Имя [[proj_modules|`__name__`|__name__ == \"__main__\"]] совпадает с именем модуля, поэтому по сообщению видно, откуда оно пришло.\n\n## Дерево логгеров\n\nЛоггеры образуют дерево по точкам в имени: `shop.db` — потомок `shop`, а все вместе — потомки корневого логгера. Сообщение потомка доходит до вывода, который настроил `basicConfig` у корня.\n\nУровень можно задать отдельной ветке: `logging.getLogger(\"shop.db\").setLevel(logging.WARNING)` заглушит только её.\n\n## Аргументы — отдельно\n\n`log.info(\"файл %s\", name)` подставляет аргументы, только если сообщение действительно пишется. f-строку Python собирает всегда, даже когда уровень выключен.\n\n## print или logging\n\n`print` — для результата программы: его читает пользователь или следующая программа. `logging` — для диагностики: что происходило и где сломалось.",
    "examples": [
     {
      "code": "import logging\nimport sys\n\nlogging.basicConfig(\n    stream=sys.stdout,\n    level=logging.INFO,\n    format=\"%(name)s: %(message)s\",\n    force=True)\ndb = logging.getLogger(\"shop.db\")\napi = logging.getLogger(\"shop.api\")\ndb.info(\"подключение\")\napi.info(\"GET /cart\")",

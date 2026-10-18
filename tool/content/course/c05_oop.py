@@ -670,7 +670,23 @@ MODULES.append(dict(
                 except TypeError:
                     print("MRO построить нельзя")""",
                 "Родитель A указан раньше своего подкласса B — ошибка")],
-              [pitfall("Думать, что `super()` всегда вызывает прямого родителя: он берёт следующий класс в MRO объекта."),
+              [pitfall("Примесь без `super()` обрывает цепочку: `save` следующего класса в MRO не вызовется.",
+                       bad='''
+                           class LogMixin:
+                               def save(self):
+                                   print("лог")''',
+                       good='''
+                           class LogMixin:
+                               def save(self):
+                                   print("лог")
+                                   super().save()'''),
+               pitfall("Примесь, указанная после основного класса, не срабатывает: его `save` в MRO находится первым.",
+                       bad='''
+                           class Doc(Storage, LogMixin):
+                               pass''',
+                       good='''
+                           class Doc(LogMixin, Storage):
+                               pass'''),
                pitfall("Явный вызов родителя в «ромбе» запускает общего предка дважды, а `super()` — один раз.",
                        bad="Log.parts(self)", good="super().parts()"),
                pitfall("Родитель указан раньше своего подкласса: `TypeError: Cannot create a consistent method resolution order`.",
@@ -1763,7 +1779,15 @@ MODULES.append(dict(
                 except AttributeError as e:
                     print(e)""",
                 "Атрибута color нет в __slots__ — создать его нельзя")],
-              [pitfall("Считать атрибут с `__` надёжно скрытым: по имени `_Класс__атрибут` он доступен."),
+              [pitfall("Снаружи `safe.__code` не найдётся: имя искажено в `_Safe__code`, будет `AttributeError`. Дайте свойство для чтения.",
+                       bad="print(safe.__code)",
+                       good='''
+                           class Safe:
+                               @property
+                               def code(self):
+                                   return self.__code
+
+                           print(safe.code)'''),
                pitfall("Атрибут, которого нет в `__slots__`, нельзя создать даже в `__init__`: `AttributeError`.",
                        bad='''
                            __slots__ = ("x",)
