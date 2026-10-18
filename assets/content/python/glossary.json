@@ -128,19 +128,19 @@
   },
   "min": {
    "brief": "Наименьший элемент последовательности или из аргументов.",
-   "topic": "list_methods",
+   "topic": "fn_builtins",
    "example": "print(min([4, 2, 9]), min(5, 3))",
    "output": "2 3\n"
   },
   "max": {
    "brief": "Наибольший элемент последовательности или из аргументов.",
-   "topic": "list_methods",
+   "topic": "fn_builtins",
    "example": "print(max([4, 2, 9]))\nprint(max(\"кот\"))",
    "output": "9\nт\n"
   },
   "sum": {
-   "brief": "Сумма чисел последовательности.",
-   "topic": "list_methods",
+   "brief": "Сумма чисел последовательности; строки не складывает.",
+   "topic": "fn_builtins",
    "example": "print(sum([1, 2, 3]))",
    "output": "6\n"
   },
@@ -1839,12 +1839,13 @@
    "example": "xs = [1]\nxs[0] = 9\nprint(xs)",
    "output": "[9]\n"
   },
-  "hashable": {
-   "brief": "Хешируемое значение не меняется: число, строка, кортеж; только такие бывают ключами dict.",
+  "хешируемый": {
+   "brief": "Значение, по которому Python может вычислить `hash`: число, строка, кортеж из таких же. Только такие бывают ключами `dict` и элементами `set`; список — нет.",
+   "topic": "tuple_basics",
    "example": "print(hash(\"a\") == hash(\"a\"))\nprint({(1, 2): \"ok\"})",
    "output": "True\n{(1, 2): 'ok'}\n"
   },
-  "none": {
+  "None": {
    "brief": "«Значения нет». Его возвращает функция без `return`.",
    "topic": "none_value",
    "example": "def f(): pass\nprint(f(), f() is None)",
@@ -1860,8 +1861,9 @@
    "example": "xs = [1, 2, 3]\ndel xs[0]\nprint(xs)",
    "output": "[2, 3]\n"
   },
-  "shallow_copy": {
+  "поверхностная копия": {
    "brief": "Поверхностная копия: новый контейнер с теми же вложенными объектами.",
+   "topic": "list_mutable",
    "example": "a = [[1]]\nb = a.copy()\nb[0].append(2)\nprint(a)",
    "output": "[[1, 2]]\n"
   },

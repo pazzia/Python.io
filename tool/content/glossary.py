@@ -88,14 +88,14 @@ term("dict", "dict_basics",
 term("sorted", "list_methods",
      brief="Новый отсортированный список, исходный не меняется.",
      example='xs = [3, 1, 2]\nprint(sorted(xs), xs)')
-term("min", "list_methods",
+term("min", "fn_builtins",
      brief="Наименьший элемент последовательности или из аргументов.",
      example='print(min([4, 2, 9]), min(5, 3))')
-term("max", "list_methods",
+term("max", "fn_builtins",
      brief="Наибольший элемент последовательности или из аргументов.",
      example='print(max([4, 2, 9]))\nprint(max("кот"))')
-term("sum", "list_methods",
-     brief="Сумма чисел последовательности.",
+term("sum", "fn_builtins",
+     brief="Сумма чисел последовательности; строки не складывает.",
      example='print(sum([1, 2, 3]))')
 term("key=", "fn_lambda_key", match=("key=len",),
      brief="Функция, по результату которой сравнивают элементы в `sorted`, `min`, `max`.",
@@ -1118,10 +1118,10 @@ term("истинность", "types_bool", auto=False,
 term("изменяемый", "list_mutable", auto=False,
      brief="Изменяемый объект можно поменять на месте, неизменяемый нельзя.",
      example='xs = [1]\nxs[0] = 9\nprint(xs)')
-term("hashable", None, auto=False,
-     brief="Хешируемое значение не меняется: число, строка, кортеж; только такие бывают ключами dict.",
+term("хешируемый", "tuple_basics", auto=False,
+     brief="Значение, по которому Python может вычислить `hash`: число, строка, кортеж из таких же. Только такие бывают ключами `dict` и элементами `set`; список — нет.",
      example='print(hash("a") == hash("a"))\nprint({(1, 2): "ok"})')
-term("none", "none_value", match=("None",),
+term("None", "none_value",
      brief="«Значения нет». Его возвращает функция без `return`.",
      example='def f(): pass\nprint(f(), f() is None)')
 term("pass", None,
@@ -1130,7 +1130,7 @@ term("pass", None,
 term("del", None,
      brief="Удаляет имя, элемент списка или ключ словаря.",
      example='xs = [1, 2, 3]\ndel xs[0]\nprint(xs)')
-term("shallow_copy", None, auto=False,
+term("поверхностная копия", "list_mutable", auto=False,
      brief="Поверхностная копия: новый контейнер с теми же вложенными объектами.",
      example='a = [[1]]\nb = a.copy()\nb[0].append(2)\nprint(a)')
 term("параметр", "func_params", auto=False,

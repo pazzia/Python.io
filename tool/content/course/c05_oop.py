@@ -107,7 +107,7 @@ MODULES.append(dict(
                 except TypeError as e:
                     print(e)""",
                 "Метод без self: Python передал объект, а принять его некуда")],
-              [pitfall("Метод без `self`: `TypeError: ring() takes 0 positional arguments but 1 was given`.",
+              [pitfall("Метод без `self`: `TypeError: Bell.ring() takes 0 positional arguments but 1 was given`.",
                        bad='''
                            def ring():
                                return "дзинь"''',
@@ -2156,7 +2156,7 @@ MODULES.append(dict(
                     print("нет элемента REED")""",
                 "Элемент не равен значению, а опечатка видна сразу")],
               [pitfall("Элемент `Enum` не равен своему значению: `Status.NEW == 1` даёт `False`.",
-                       bad="done = status == 1", good="done = status is Status.NEW"),
+                       bad="is_new = status == 1", good="is_new = status is Status.NEW"),
                pitfall("Элементы обычного `Enum` не сравниваются через `<`: `TypeError: '<' not supported`.",
                        bad="Level.EASY < Level.HARD", good="Level.EASY.value < Level.HARD.value")]),
     ],
