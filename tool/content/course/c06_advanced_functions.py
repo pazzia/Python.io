@@ -243,10 +243,10 @@ MODULES.append(dict(
 
                 nums = [x * x for x in range(10_000)]
                 lazy = (x * x for x in range(10_000))
-                print(sys.getsizeof(nums))
-                print(sys.getsizeof(lazy))
+                print(sys.getsizeof(nums) > 30_000)
+                print(sys.getsizeof(lazy) < 300)
                 print(sum(lazy))""",
-                "Список занимает десятки килобайт, генератор — сотню-другую байт"),
+                "Список занимает десятки килобайт, генератор — пару сотен байт"),
                ("""\
                 lines = ["10", " ", "7 ", "x", "3"]
                 clean = (s.strip() for s in lines)

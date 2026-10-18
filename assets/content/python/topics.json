@@ -3589,9 +3589,9 @@
    "body": "Список хранит все значения сразу. Если строк в файле миллион, а нужна первая подходящая, считать и хранить остальные незачем. Генераторы считают значения по требованию.\n\n## Ленивое и жадное\n\n- `[x * 2 for x in data]` — список: всё считается сразу и лежит в памяти.\n- `(x * 2 for x in data)` — генераторное выражение: значения считаются по одному.\n\nЗначения по запросу выдают [[gen_yield|генераторы]], [[fn_builtins|`map`|map]], `filter`, `zip` и открытый файл. `range` тоже не хранит числа, а вычисляет их.\n\n## Конвейер\n\nГенераторы соединяют в цепочку: каждый берёт значения у предыдущего.\n\n```syntax\nчистые = (s.strip() for s in источник)\nнепустые = (s for s in чистые if s)\nчисла = (int(s) for s in непустые)\n```\n\nПока результат не перебирают, ничего не считается. При переборе каждое значение проходит всю цепочку, и только потом берётся следующее. В памяти одновременно одно значение.\n\n## Бесконечный поток\n\nГенератор с `while True` сам не заканчивается. Из него берут столько, сколько нужно:\n\n- `islice(поток, n)` из [[std_itertools|itertools]] — первые `n` значений;\n- [[gen_iter|`next(поток)`|next]] — одно значение;\n- цикл `for` с [[loopx_break|break]].\n\n`list`, [[list_methods|`sum`|sum]] и `sorted` перебирают поток до конца: на бесконечном генераторе программа зависнет.\n\n`batched(поток, n)` режет поток на пачки по `n` (с Python 3.12).",
    "examples": [
     {
-     "code": "import sys\n\nnums = [x * x for x in range(10_000)]\nlazy = (x * x for x in range(10_000))\nprint(sys.getsizeof(nums))\nprint(sys.getsizeof(lazy))\nprint(sum(lazy))",
-     "output": "85176\n200\n333283335000\n",
-     "note": "Список занимает десятки килобайт, генератор — сотню-другую байт"
+     "code": "import sys\n\nnums = [x * x for x in range(10_000)]\nlazy = (x * x for x in range(10_000))\nprint(sys.getsizeof(nums) > 30_000)\nprint(sys.getsizeof(lazy) < 300)\nprint(sum(lazy))",
+     "output": "True\nTrue\n333283335000\n",
+     "note": "Список занимает десятки килобайт, генератор — пару сотен байт"
     },
     {
      "code": "lines = [\"10\", \" \", \"7 \", \"x\", \"3\"]\nclean = (s.strip() for s in lines)\ndigits = (s for s in clean\n          if s.isdigit())\nnums = (int(s) for s in digits)\nprint(sum(nums))",
