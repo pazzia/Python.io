@@ -19,3 +19,8 @@ ios/.symlinks/
 ios/Flutter/Generated.xcconfig
 ios/Flutter/flutter_export_environment.sh
 __pycache__/
+
+# Claude Code: local state and throwaway UX screenshots
+.claude/state/
+.claude/settings.local.json
+test/ux_check/
